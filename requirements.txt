@@ -1,0 +1,13 @@
+# Web server
+flask>=2.3
+gunicorn>=21.0
+
+# Data / ML
+joblib>=1.3
+pandas>=2.0
+numpy>=1.24
+scikit-learn>=1.3
+
+# Boosting models (the best model uses one of these)
+xgboost>=2.0
+lightgbm>=4.0

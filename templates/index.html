@@ -1,512 +1,763 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>FraudShield — AI Fraud Detection</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FraudShield | Enterprise Risk Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #10b981;
+            --accent-hover: #059669;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --risk-low: #10b981;
+            --risk-med: #f59e0b;
+            --risk-high: #ef4444;
+            --sidebar-width: 260px;
+        }
 
-    :root {
-      --bg:       #06091a;
-      --surface:  #0d1230;
-      --glass:    rgba(255,255,255,0.04);
-      --border:   rgba(255,255,255,0.08);
-      --blue:     #3b82f6;
-      --cyan:     #06b6d4;
-      --purple:   #8b5cf6;
-      --green:    #10b981;
-      --amber:    #f59e0b;
-      --red:      #ef4444;
-      --text:     #e2e8f0;
-      --muted:    #64748b;
-      --radius:   16px;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
 
-    /* ── Background particles ── */
-    #canvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
+        /* --- Sidebar --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 0;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
 
-    /* ── Layout ── */
-    .wrapper { position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:0 24px; }
+        .sidebar-brand {
+            padding: 0 24px 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
 
-    /* ── Header ── */
-    header {
-      background: linear-gradient(135deg, #0d1230 0%, #1a0a3d 50%, #0d1230 100%);
-      border-bottom: 1px solid var(--border);
-      padding: 20px 0;
-    }
-    .header-inner { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
-    .brand { display:flex; align-items:center; gap:14px; }
-    .brand-icon {
-      width:48px; height:48px; border-radius:12px;
-      background: linear-gradient(135deg, var(--blue), var(--purple));
-      display:flex; align-items:center; justify-content:center; font-size:24px;
-      box-shadow: 0 0 20px rgba(59,130,246,0.4);
-    }
-    .brand-text h1 { font-size:1.5rem; font-weight:800; background:linear-gradient(90deg,var(--cyan),var(--purple)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-    .brand-text p  { font-size:0.78rem; color:var(--muted); margin-top:2px; }
+        .sidebar-brand i {
+            color: var(--accent);
+        }
 
-    .model-badge {
-      display:flex; align-items:center; gap:8px; padding:8px 16px;
-      background:var(--glass); border:1px solid var(--border); border-radius:50px;
-      font-size:0.8rem;
-    }
-    .status-dot { width:8px; height:8px; border-radius:50%; background:var(--muted); animation:pulse 2s infinite; }
-    .status-dot.online { background:var(--green); }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .nav-menu {
+            list-style: none;
+            flex: 1;
+        }
 
-    /* ── Metrics strip ── */
-    .metrics-strip {
-      display:flex; gap:16px; padding:16px 0; overflow-x:auto;
-    }
-    .metric-chip {
-      flex:0 0 auto; padding:8px 20px;
-      background:var(--glass); border:1px solid var(--border); border-radius:50px;
-      font-size:0.78rem; white-space:nowrap;
-    }
-    .metric-chip span { color:var(--cyan); font-weight:700; margin-left:4px; }
+        .nav-item {
+            padding: 2px 16px;
+        }
 
-    /* ── Main grid ── */
-    .main { display:grid; grid-template-columns:1fr 1fr; gap:24px; padding:24px 0 40px; }
-    @media(max-width:900px){ .main{ grid-template-columns:1fr; } }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: #94a3b8;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
 
-    /* ── Cards ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      backdrop-filter: blur(12px);
-    }
-    .card-title {
-      font-size:1rem; font-weight:700; margin-bottom:20px;
-      display:flex; align-items:center; gap:8px;
-    }
-    .card-title .icon { font-size:1.1rem; }
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background-color: var(--primary-light);
+        }
 
-    /* ── Form ── */
-    .field { margin-bottom:18px; }
-    label { display:block; font-size:0.78rem; font-weight:600; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em; }
-    input, select {
-      width:100%; padding:12px 16px;
-      background:var(--glass); border:1px solid var(--border); border-radius:10px;
-      color:var(--text); font-family:inherit; font-size:0.9rem;
-      transition:border-color .2s, box-shadow .2s;
-      -webkit-appearance:none;
-    }
-    input:focus, select:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-    select option { background:#1e293b; }
+        .nav-link.active i {
+            color: var(--accent);
+        }
 
-    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
 
-    .btn-analyze {
-      width:100%; padding:15px; margin-top:8px;
-      background: linear-gradient(135deg, var(--blue), var(--purple));
-      border:none; border-radius:12px; cursor:pointer;
-      font-family:inherit; font-size:1rem; font-weight:700; color:#fff;
-      letter-spacing:.03em;
-      transition: transform .15s, box-shadow .15s, opacity .15s;
-      box-shadow: 0 4px 20px rgba(59,130,246,.35);
-    }
-    .btn-analyze:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 28px rgba(59,130,246,.5); }
-    .btn-analyze:active:not(:disabled) { transform:translateY(0); }
-    .btn-analyze:disabled { opacity:.5; cursor:not-allowed; }
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
 
-    /* ── Result panel ── */
-    .result-panel { display:flex; flex-direction:column; gap:20px; }
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
 
-    /* Gauge */
-    .gauge-card {
-      display:flex; flex-direction:column; align-items:center;
-      padding:32px 28px 24px;
-    }
-    .gauge-wrap { position:relative; width:200px; height:110px; }
-    .gauge-wrap svg { width:200px; height:110px; overflow:visible; }
-    .gauge-bg   { fill:none; stroke:rgba(255,255,255,.06); stroke-width:14; stroke-linecap:round; }
-    .gauge-fill { fill:none; stroke:var(--cyan); stroke-width:14; stroke-linecap:round;
-                  stroke-dasharray:314; stroke-dashoffset:314;
-                  transition:stroke-dashoffset .9s cubic-bezier(.4,0,.2,1), stroke .4s; }
-    .gauge-center { position:absolute; bottom:4px; left:0; right:0; text-align:center; }
-    .gauge-pct { font-size:2rem; font-weight:800; }
-    .gauge-label { font-size:0.7rem; color:var(--muted); margin-top:2px; }
+        /* --- Main Content --- */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 32px 48px;
+        }
 
-    .verdict { text-align:center; margin-top:16px; }
-    .verdict-badge {
-      display:inline-block; padding:10px 32px; border-radius:50px;
-      font-size:1.1rem; font-weight:800; letter-spacing:.05em;
-      background:rgba(100,116,139,.15); color:var(--muted);
-      border:2px solid var(--border);
-      transition: all .4s;
-    }
-    .verdict-badge.fraud     { background:rgba(239,68,68,.15);  color:var(--red);   border-color:var(--red); }
-    .verdict-badge.legit     { background:rgba(16,185,129,.15); color:var(--green); border-color:var(--green); }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
 
-    .risk-row { display:flex; justify-content:center; gap:12px; margin-top:14px; }
-    .risk-chip {
-      padding:5px 18px; border-radius:50px; font-size:.78rem; font-weight:700;
-      border:1.5px solid currentColor; opacity:.3; transition:opacity .4s, transform .4s;
-    }
-    .risk-chip.active { opacity:1; transform:scale(1.1); }
-    .risk-LOW    { color:var(--green); }
-    .risk-MEDIUM { color:var(--amber); }
-    .risk-HIGH   { color:var(--red); }
+        .page-title h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
 
-    .idle-hint { text-align:center; color:var(--muted); font-size:.85rem; padding:40px 0; display:flex; flex-direction:column; align-items:center; gap:10px; }
-    .idle-hint .big-icon { font-size:3rem; opacity:.3; }
+        .page-title p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: 4px;
+        }
 
-    /* ── History table ── */
-    .history-section { grid-column:1/-1; }
-    .table-wrap { overflow-x:auto; }
-    table { width:100%; border-collapse:collapse; font-size:.82rem; }
-    th { text-align:left; padding:10px 14px; color:var(--muted); font-weight:600; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border); }
-    td { padding:12px 14px; border-bottom:1px solid var(--border); }
-    tr:last-child td { border-bottom:none; }
-    .badge { display:inline-block; padding:3px 10px; border-radius:50px; font-size:.72rem; font-weight:700; }
-    .badge-fraud  { background:rgba(239,68,68,.15);  color:var(--red); }
-    .badge-legit  { background:rgba(16,185,129,.15); color:var(--green); }
-    .badge-HIGH   { background:rgba(239,68,68,.15);  color:var(--red); }
-    .badge-MEDIUM { background:rgba(245,158,11,.15); color:var(--amber); }
-    .badge-LOW    { background:rgba(16,185,129,.15); color:var(--green); }
-    .empty-history { text-align:center; color:var(--muted); padding:28px; font-size:.85rem; }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-    /* ── Spinner ── */
-    .spinner { width:20px; height:20px; border:2.5px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; margin-right:8px; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-  </style>
+        .profile-info {
+            text-align: right;
+        }
+
+        .profile-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .profile-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background-color: var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        /* --- Dashboard Grid --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* --- Form Elements --- */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--primary-light);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--text-main);
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            background-color: #1e293b;
+        }
+
+        /* --- Analysis Results --- */
+        .analysis-result {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+        }
+
+        .empty-state {
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.2;
+        }
+
+        .risk-display {
+            width: 100%;
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+        }
+
+        .risk-badge.low { background-color: #d1fae5; color: #065f46; }
+        .risk-badge.med { background-color: #fef3c7; color: #92400e; }
+        .risk-badge.high { background-color: #fee2e2; color: #991b1b; }
+
+        .score-circle {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 24px;
+        }
+
+        .score-svg {
+            transform: rotate(-90deg);
+        }
+
+        .score-bg {
+            fill: none;
+            stroke: #f1f5f9;
+            stroke-width: 12;
+        }
+
+        .score-fill {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-dasharray: 440;
+            stroke-dashoffset: 440;
+            transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .score-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .score-value {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* --- History Table --- */
+        .history-card {
+            grid-column: 1 / span 2;
+            margin-top: 24px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 16px;
+            font-size: 0.875rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge-table {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-table.low { background-color: #f0fdf4; color: #166534; }
+        .badge-table.med { background-color: #fffbeb; color: #92400e; }
+        .badge-table.high { background-color: #fef2f2; color: #991b1b; }
+
+        /* --- Model Stats (Hidden/Minimized) --- */
+        .system-audit {
+            margin-top: 32px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+        }
+
+        .audit-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .audit-toggle:hover {
+            color: var(--primary);
+        }
+
+        .audit-content {
+            display: none;
+            margin-top: 16px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .stat-box {
+            padding: 16px;
+            background-color: #f1f5f9;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: var(--primary);
+        }
+
+        /* --- Loading Spinner --- */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-<canvas id="canvas"></canvas>
 
-<header>
-  <div class="wrapper">
-    <div class="header-inner">
-      <div class="brand">
-        <div class="brand-icon">🛡️</div>
-        <div class="brand-text">
-          <h1>FraudShield</h1>
-          <p>AI-powered Mobile Transaction Fraud Detection</p>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-shield-halved"></i>
+            <span>FraudShield</span>
         </div>
-      </div>
-      <div class="model-badge">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="modelName">Connecting…</span>
-      </div>
-    </div>
-    <div class="metrics-strip" id="metricsStrip">
-      <div class="metric-chip">Loading model info…</div>
-    </div>
-  </div>
-</header>
-
-<div class="wrapper">
-  <div class="main">
-
-    <!-- ── Input Form ── -->
-    <div class="card">
-      <div class="card-title"><span class="icon">📋</span> Transaction Details</div>
-
-      <form id="txForm">
-        <div class="field">
-          <label>Transaction Type</label>
-          <select name="type" id="txType">
-            <option value="CASH_IN">CASH_IN</option>
-            <option value="CASH_OUT" selected>CASH_OUT</option>
-            <option value="DEBIT">DEBIT</option>
-            <option value="PAYMENT">PAYMENT</option>
-            <option value="TRANSFER">TRANSFER</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Transaction Amount ($)</label>
-          <input type="number" name="amount" id="amount" placeholder="e.g. 45000" min="0" step="any" required/>
-        </div>
-
-        <div class="field">
-          <label>Origin Account Balances</label>
-          <div class="field-row">
-            <div>
-              <label style="font-size:.7rem;">Before</label>
-              <input type="number" name="oldbalanceOrg" id="oldbalanceOrg" placeholder="Before tx" min="0" step="any"/>
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="#" class="nav-link active">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Risk Analysis</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link">
+                    <i class="fas fa-history"></i>
+                    <span>Audit Log</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <div class="system-status">
+                <div class="status-indicator"></div>
+                <span>Risk Engine Active</span>
             </div>
-            <div>
-              <label style="font-size:.7rem;">After</label>
-              <input type="number" name="newbalanceOrig" id="newbalanceOrig" placeholder="After tx" min="0" step="any"/>
-            </div>
-          </div>
         </div>
-
-        <div class="field">
-          <label>Destination Account Balances</label>
-          <div class="field-row">
-            <div>
-              <label style="font-size:.7rem;">Before</label>
-              <input type="number" name="oldbalanceDest" id="oldbalanceDest" placeholder="Before tx" min="0" step="any"/>
-            </div>
-            <div>
-              <label style="font-size:.7rem;">After</label>
-              <input type="number" name="newbalanceDest" id="newbalanceDest" placeholder="After tx" min="0" step="any"/>
-            </div>
-          </div>
-        </div>
-
-        <button type="submit" class="btn-analyze" id="btnAnalyze">
-          🔍 Analyze Transaction
-        </button>
-      </form>
     </div>
 
-    <!-- ── Result Panel ── -->
-    <div class="result-panel">
-      <div class="card gauge-card" id="resultCard">
-        <div class="idle-hint" id="idleHint">
-          <div class="big-icon">🔍</div>
-          <div>Fill in the transaction details<br/>and click <b>Analyze</b> to detect fraud.</div>
-        </div>
-
-        <div id="resultContent" style="display:none; width:100%; text-align:center;">
-          <div class="gauge-wrap">
-            <svg viewBox="0 0 200 110">
-              <!-- arc from 205° to -25° = 180°+40° = half + a bit -->
-              <path class="gauge-bg"  d="M 20 100 A 80 80 0 0 1 180 100"/>
-              <path class="gauge-fill" id="gaugeFill" d="M 20 100 A 80 80 0 0 1 180 100"/>
-            </svg>
-            <div class="gauge-center">
-              <div class="gauge-pct" id="gaugePct">0%</div>
-              <div class="gauge-label">Fraud Probability</div>
+    <!-- Main Content -->
+    <div class="main-content">
+        <header>
+            <div class="page-title">
+                <h2>Transaction Intelligence</h2>
+                <p>Enterprise-grade fraud detection & risk assessment</p>
             </div>
-          </div>
+            <div class="user-profile">
+                <div class="profile-info">
+                    <div class="profile-name">Risk Analyst</div>
+                    <div class="profile-role">Admin Access</div>
+                </div>
+                <div class="avatar">RA</div>
+            </div>
+        </header>
 
-          <div class="verdict">
-            <div class="verdict-badge" id="verdictBadge">—</div>
-          </div>
+        <div class="dashboard-grid">
+            <!-- Analysis Tool -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Analysis Tool</h3>
+                </div>
+                <form id="analysis-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Transaction Type</label>
+                            <select id="type" name="type">
+                                <option value="PAYMENT">Payment</option>
+                                <option value="TRANSFER">Transfer</option>
+                                <option value="CASH_OUT">Cash Out</option>
+                                <option value="CASH_IN">Cash In</option>
+                                <option value="DEBIT">Debit</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Recipient Type</label>
+                            <select id="destType" name="destType">
+                                <option value="CUSTOMER">Individual Customer</option>
+                                <option value="MERCHANT">Verified Merchant</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Transaction Amount (USD)</label>
+                        <input type="number" id="amount" name="amount" placeholder="0.00" step="0.01" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Origin Initial Balance</label>
+                            <input type="number" id="oldbalanceOrg" name="oldbalanceOrg" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>Origin New Balance</label>
+                            <input type="number" id="newbalanceOrig" name="newbalanceOrig" placeholder="0.00" step="0.01">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Destination Initial Balance</label>
+                            <input type="number" id="oldbalanceDest" name="oldbalanceDest" placeholder="0.00" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>Destination New Balance</label>
+                            <input type="number" id="newbalanceDest" name="newbalanceDest" placeholder="0.00" step="0.01">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" id="submit-btn">
+                        <div class="spinner" id="btn-spinner"></div>
+                        <span>Analyze Transaction</span>
+                    </button>
+                </form>
+            </div>
 
-          <div class="risk-row">
-            <div class="risk-chip risk-LOW"    id="chipLOW">LOW</div>
-            <div class="risk-chip risk-MEDIUM" id="chipMEDIUM">MEDIUM</div>
-            <div class="risk-chip risk-HIGH"   id="chipHIGH">HIGH</div>
-          </div>
+            <!-- Analysis Result -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Risk Assessment</h3>
+                </div>
+                <div class="analysis-result" id="result-container">
+                    <div class="empty-state" id="empty-state">
+                        <i class="fas fa-magnifying-glass-chart"></i>
+                        <p>Submit a transaction to generate a risk assessment report.</p>
+                    </div>
+                    
+                    <!-- Result Display (Hidden initially) -->
+                    <div class="risk-display" id="result-display" style="display: none;">
+                        <div class="risk-badge" id="risk-badge">Low Risk</div>
+                        <div class="score-circle">
+                            <svg class="score-svg" width="180" height="180">
+                                <circle class="score-bg" cx="90" cy="90" r="70"></circle>
+                                <circle class="score-fill" id="score-fill" cx="90" cy="90" r="70"></circle>
+                            </svg>
+                            <div class="score-text">
+                                <div class="score-value" id="score-value">0%</div>
+                                <div class="score-label">Risk Score</div>
+                            </div>
+                        </div>
+                        <div style="text-align: left; font-size: 0.875rem;">
+                            <p style="margin-bottom: 8px;"><strong id="verdict-text">Legitimate Transaction</strong></p>
+                            <p style="color: var(--text-muted);" id="recommendation">The transaction pattern aligns with standard behavior. No immediate action required.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-          <div style="margin-top:16px; font-size:.75rem; color:var(--muted);" id="modelUsed"></div>
+            <!-- History -->
+            <div class="card history-card">
+                <div class="card-header">
+                    <h3 class="card-title">Recent Audit Log</h3>
+                    <button style="font-size: 0.75rem; background: none; border: none; color: var(--accent); font-weight: 600; cursor: pointer;">View All Logs</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Risk Score</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-body">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted);">No logs available in current session.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-      </div>
 
-      <!-- Model stats card -->
-      <div class="card" id="statsCard" style="display:none;">
-        <div class="card-title"><span class="icon">📊</span> Model Performance</div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;" id="statsGrid"></div>
-      </div>
+        <!-- System Audit Section Removed -->
     </div>
 
-    <!-- ── History ── -->
-    <div class="card history-section">
-      <div class="card-title"><span class="icon">🕒</span> Recent Predictions</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th><th>Type</th><th>Amount</th>
-              <th>Probability</th><th>Risk</th><th>Verdict</th>
-            </tr>
-          </thead>
-          <tbody id="historyBody">
-            <tr><td colspan="6" class="empty-history">No predictions yet.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <script>
+        const form = document.getElementById('analysis-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnSpinner = document.getElementById('btn-spinner');
+        const emptyState = document.getElementById('empty-state');
+        const resultDisplay = document.getElementById('result-display');
+        const riskBadge = document.getElementById('risk-badge');
+        const scoreFill = document.getElementById('score-fill');
+        const scoreValue = document.getElementById('score-value');
+        const verdictText = document.getElementById('verdict-text');
+        const recommendation = document.getElementById('recommendation');
+        const historyBody = document.getElementById('history-body');
 
-  </div><!-- /main -->
-</div><!-- /wrapper -->
+        // History storage
+        let scanHistory = [];
 
-<script>
-// ── Particle background ──────────────────────────────────────────────────────
-(function(){
-  const cvs = document.getElementById('canvas');
-  const ctx = cvs.getContext('2d');
-  let W, H, pts = [];
-  function resize(){ W=cvs.width=innerWidth; H=cvs.height=innerHeight; }
-  resize(); window.addEventListener('resize', resize);
-  for(let i=0;i<60;i++) pts.push({
-    x:Math.random()*1400, y:Math.random()*900,
-    vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3,
-    r:Math.random()*1.5+.5, a:Math.random()
-  });
-  function draw(){
-    ctx.clearRect(0,0,W,H);
-    pts.forEach(p=>{
-      p.x+=p.vx; p.y+=p.vy;
-      if(p.x<0)p.x=W; if(p.x>W)p.x=0;
-      if(p.y<0)p.y=H; if(p.y>H)p.y=0;
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle=`rgba(59,130,246,${p.a*0.35})`;
-      ctx.fill();
-    });
-    // Lines between near pts
-    for(let i=0;i<pts.length;i++){
-      for(let j=i+1;j<pts.length;j++){
-        const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y;
-        const d=Math.sqrt(dx*dx+dy*dy);
-        if(d<120){
-          ctx.beginPath();
-          ctx.moveTo(pts[i].x,pts[i].y);
-          ctx.lineTo(pts[j].x,pts[j].y);
-          ctx.strokeStyle=`rgba(59,130,246,${(1-d/120)*0.1})`;
-          ctx.stroke();
+        // Fetch system stats removed for UI cleaniness
+        /*
+        async function fetchSystemStats() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                if (data.status === 'healthy') {
+                    // document.getElementById('stat-model').textContent = data.model;
+                    // ...
+                }
+            } catch (err) {
+                console.error("Audit fetch failed", err);
+            }
         }
-      }
-    }
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
+        fetchSystemStats();
+        */
 
-// ── Gauge helper ─────────────────────────────────────────────────────────────
-// Arc: M 20 100 A 80 80 0 0 1 180 100  → total length ≈ π*80 ≈ 251.3
-const GAUGE_LEN = Math.PI * 80; // ~251.3
+        // Audit toggle removed
+        /*
+        auditToggle.addEventListener('click', () => {
+            const isVisible = auditContent.style.display === 'grid';
+            auditContent.style.display = isVisible ? 'none' : 'grid';
+            auditIcon.className = isVisible ? 'fas fa-chevron-right' : 'fas fa-chevron-down';
+        });
+        */
 
-function setGauge(prob){
-  const fill  = document.getElementById('gaugeFill');
-  const pct   = document.getElementById('gaugePct');
-  const offset = GAUGE_LEN * (1 - prob);
-  fill.style.strokeDasharray  = GAUGE_LEN;
-  fill.style.strokeDashoffset = offset;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Loading state
+            submitBtn.disabled = true;
+            btnSpinner.style.display = 'block';
+            
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                if (result.error) throw new Error(result.error);
+                
+                showResult(result, data);
+                updateHistory(result, data);
+                
+            } catch (err) {
+                alert("Risk Analysis Failed: " + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                btnSpinner.style.display = 'none';
+            }
+        });
 
-  // Color by risk
-  const color = prob >= .7 ? '#ef4444' : prob >= .3 ? '#f59e0b' : '#10b981';
-  fill.style.stroke = color;
-  pct.style.color   = color;
-  pct.textContent   = (prob*100).toFixed(1)+'%';
-}
+        function showResult(result, input) {
+            emptyState.style.display = 'none';
+            resultDisplay.style.display = 'block';
+            
+            const prob = result.fraud_probability;
+            const pct = Math.round(prob * 100);
+            
+            scoreValue.textContent = pct + '%';
+            
+            // Gauge animation
+            const offset = 440 - (440 * prob);
+            scoreFill.style.strokeDashoffset = offset;
+            
+            // UI Logic based on risk
+            if (prob < 0.3) {
+                riskBadge.textContent = "Low Risk";
+                riskBadge.className = "risk-badge low";
+                scoreFill.style.stroke = "var(--risk-low)";
+                verdictText.textContent = "Verified Legitimate";
+                recommendation.textContent = "This transaction profile matches verified patterns. No further verification required.";
+            } else if (prob < 0.7) {
+                riskBadge.textContent = "Medium Risk";
+                riskBadge.className = "risk-badge med";
+                scoreFill.style.stroke = "var(--risk-med)";
+                verdictText.textContent = "Anomalous Activity";
+                recommendation.textContent = "Transaction exhibits minor deviations. Recommend second-factor authentication or internal review.";
+            } else {
+                riskBadge.textContent = "High Risk";
+                riskBadge.className = "risk-badge high";
+                scoreFill.style.stroke = "var(--risk-high)";
+                verdictText.textContent = "Critical Fraud Alert";
+                let desc = "Severe risk detected. Transaction blocked.";
+                if (result.reasons && result.reasons.length > 0) {
+                    desc += " Reason: " + result.reasons.join(" ");
+                }
+                recommendation.textContent = desc;
+            }
+        }
 
-// ── Health check ─────────────────────────────────────────────────────────────
-async function checkHealth(){
-  try {
-    const r = await fetch('/health');
-    const d = await r.json();
-    if(d.status === 'healthy'){
-      document.getElementById('statusDot').classList.add('online');
-      document.getElementById('modelName').textContent = d.model;
+        function updateHistory(result, input) {
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            scanHistory.unshift({
+                time: now,
+                type: input.type,
+                amount: parseFloat(input.amount).toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
+                score: Math.round(result.fraud_probability * 100) + '%',
+                risk: result.risk_level
+            });
+            
+            if (scanHistory.length > 5) scanHistory.pop();
+            
+            renderHistory();
+        }
 
-      // Metrics strip
-      const strip = document.getElementById('metricsStrip');
-      strip.innerHTML = [
-        ['Model', d.model],
-        ['ROC-AUC', d.roc_auc.toFixed(4)],
-        ['F1', d.f1.toFixed(4)],
-        ['Precision', d.precision.toFixed(4)],
-        ['Recall', d.recall.toFixed(4)],
-      ].map(([k,v])=>`<div class="metric-chip">${k}: <span>${v}</span></div>`).join('');
-
-      // Stats card
-      const grid = document.getElementById('statsGrid');
-      grid.innerHTML = [
-        ['🎯 ROC-AUC',  d.roc_auc.toFixed(4)],
-        ['📐 F1 Score', d.f1.toFixed(4)],
-        ['🔍 Precision',d.precision.toFixed(4)],
-        ['📡 Recall',   d.recall.toFixed(4)],
-      ].map(([k,v])=>`
-        <div style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:14px;">
-          <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px;">${k}</div>
-          <div style="font-size:1.4rem;font-weight:800;color:var(--cyan);">${v}</div>
-        </div>`).join('');
-      document.getElementById('statsCard').style.display = 'block';
-    } else {
-      document.getElementById('modelName').textContent = 'Model not loaded — run notebook first';
-    }
-  } catch(e) {
-    document.getElementById('modelName').textContent = 'API offline';
-  }
-}
-checkHealth();
-
-// ── History ──────────────────────────────────────────────────────────────────
-let history = [];
-function updateHistory(row){
-  history.unshift(row);
-  if(history.length > 8) history.pop();
-  const tbody = document.getElementById('historyBody');
-  if(!history.length){
-    tbody.innerHTML='<tr><td colspan="6" class="empty-history">No predictions yet.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = history.map(r=>`
-    <tr>
-      <td>${new Date(r.timestamp).toLocaleTimeString()}</td>
-      <td>${r.type}</td>
-      <td>$${Number(r.amount).toLocaleString()}</td>
-      <td>${(r.fraud_probability*100).toFixed(2)}%</td>
-      <td><span class="badge badge-${r.risk_level}">${r.risk_level}</span></td>
-      <td><span class="badge ${r.is_fraud?'badge-fraud':'badge-legit'}">${r.is_fraud?'FRAUD':'LEGIT'}</span></td>
-    </tr>`).join('');
-}
-
-// ── Form submit ───────────────────────────────────────────────────────────────
-document.getElementById('txForm').addEventListener('submit', async function(e){
-  e.preventDefault();
-  const btn = document.getElementById('btnAnalyze');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Analyzing…';
-
-  const formData = {
-    type:          document.getElementById('txType').value,
-    amount:        document.getElementById('amount').value,
-    oldbalanceOrg: document.getElementById('oldbalanceOrg').value || '0',
-    newbalanceOrig:document.getElementById('newbalanceOrig').value || '0',
-    oldbalanceDest:document.getElementById('oldbalanceDest').value || '0',
-    newbalanceDest:document.getElementById('newbalanceDest').value || '0',
-  };
-
-  try {
-    const res  = await fetch('/predict', { method:'POST',
-      headers:{'Content-Type':'application/json'}, body:JSON.stringify(formData) });
-    const data = await res.json();
-
-    if(data.error){ alert('Error: '+data.error); return; }
-
-    // Show result
-    document.getElementById('idleHint').style.display     = 'none';
-    document.getElementById('resultContent').style.display = 'block';
-
-    setGauge(data.fraud_probability);
-
-    const vb = document.getElementById('verdictBadge');
-    vb.textContent = data.is_fraud ? '⚠️  FRAUD DETECTED' : '✅  LEGITIMATE';
-    vb.className   = 'verdict-badge ' + (data.is_fraud ? 'fraud' : 'legit');
-
-    ['LOW','MEDIUM','HIGH'].forEach(r=>{
-      document.getElementById('chip'+r).classList.toggle('active', r===data.risk_level);
-    });
-
-    document.getElementById('modelUsed').textContent = 'Model: '+data.model;
-
-    // Add to history
-    updateHistory({ ...formData, ...data });
-
-  } catch(err) {
-    alert('Network error: '+err.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '🔍 Analyze Transaction';
-  }
-});
-
-// ── Quick test samples ─────────────────────────────────────────────────────
-// (just sets form values for demo)
-const samples = [
-  { label:'Suspicious TRANSFER', type:'TRANSFER', amount:500000, oldbalanceOrg:500000, newbalanceOrig:0, oldbalanceDest:0, newbalanceDest:500000 },
-  { label:'Normal PAYMENT',      type:'PAYMENT',  amount:1200,   oldbalanceOrg:5000,   newbalanceOrig:3800, oldbalanceDest:0, newbalanceDest:0 },
-];
-</script>
+        function renderHistory() {
+            if (scanHistory.length === 0) return;
+            
+            historyBody.innerHTML = scanHistory.map(item => `
+                <tr>
+                    <td>${item.time}</td>
+                    <td><strong>${item.type}</strong></td>
+                    <td>${item.amount}</td>
+                    <td>${item.score}</td>
+                    <td><span class="badge-table ${item.risk.toLowerCase()}">${item.risk}</span></td>
+                </tr>
+            `).join('');
+        }
+    </script>
 </body>
 </html>

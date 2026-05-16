@@ -37,13 +37,31 @@ except ImportError:
 
 # ── 1. Load dataset ──────────────────────────────────────────────────────────
 CSV = "PS_20174392719_1491204439457_log.csv"
-print(f"Loading {CSV} (10 % sample)…")
-df = pd.read_csv(CSV).sample(frac=0.1, random_state=42)
+print(f"Loading {CSV} (20 % sample)…")
+df = pd.read_csv(CSV).sample(frac=0.2, random_state=42)
 print(f"  Shape: {df.shape}")
 
-# ── 2. Preprocess ────────────────────────────────────────────────────────────
+# ── 2. Preprocess & Feature Engineering ──────────────────────────────────────
+def engineer_features(df_input):
+    df_res = df_input.copy()
+    
+    # 1. Merchant Detection (PaySim specific: nameDest starting with M)
+    # We create this before dropping the column
+    df_res['isMerchant'] = df_res['nameDest'].str.startswith('M').astype(int)
+    
+    # 2. Logical consistency features
+    df_res['errorBalanceOrg'] = df_res['newbalanceOrig'] + df_res['amount'] - df_res['oldbalanceOrg']
+    
+    # For Merchants, destination balance info is missing (always 0), 
+    # so we set error to 0 to avoid false 'imbalance' signals.
+    df_res['errorBalanceDest'] = df_res['oldbalanceDest'] + df_res['amount'] - df_res['newbalanceDest']
+    df_res.loc[df_res['isMerchant'] == 1, 'errorBalanceDest'] = 0
+    
+    return df_res
+
 drop_cols = ["nameOrig", "nameDest", "isFlaggedFraud", "step"]
-df_clean  = df.drop(columns=drop_cols)
+df_clean  = engineer_features(df)
+df_clean  = df_clean.drop(columns=drop_cols)
 df_clean  = pd.get_dummies(df_clean, columns=["type"], drop_first=True)
 
 X = df_clean.drop("isFraud", axis=1)
@@ -59,31 +77,32 @@ X_test_scaled  = pd.DataFrame(scaler.transform(X_test),      columns=X_test.colu
 feature_names  = X_train_scaled.columns.tolist()
 print(f"  Features: {feature_names}")
 
-# ── 3. SMOTE ─────────────────────────────────────────────────────────────────
-print("Applying SMOTE…")
-sm = SMOTE(random_state=42)
-X_train_sm, y_train_sm = sm.fit_resample(X_train_scaled, y_train)
+# ── 3. Data Handling ─────────────────────────────────────────────────────────
+# We will use class_weight or scale_pos_weight instead of SMOTE for better precision
+print("Calculating class weights…")
+neg, pos = np.bincount(y_train)
+scale_pos_weight = neg / pos
+print(f"  Pos:Neg Ratio = 1:{scale_pos_weight:.1f}")
 
 # ── 4. Train all models ───────────────────────────────────────────────────────
 models = {
-    "Logistic Regression": LogisticRegression(random_state=42, max_iter=1000, C=0.1),
-    "Decision Tree":       DecisionTreeClassifier(random_state=42, max_depth=10),
-    "Random Forest":       RandomForestClassifier(n_estimators=50, random_state=42,
-                                                   n_jobs=-1, max_depth=10),
-    "Gradient Boosting":   GradientBoostingClassifier(n_estimators=50, random_state=42,
-                                                       max_depth=5),
+    "Logistic Regression": LogisticRegression(random_state=42, max_iter=1000, class_weight='balanced'),
+    "Decision Tree":       DecisionTreeClassifier(random_state=42, max_depth=10, class_weight='balanced'),
+    "Random Forest":       RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1, max_depth=15, class_weight='balanced'),
+    "Gradient Boosting":   GradientBoostingClassifier(n_estimators=100, random_state=42, max_depth=7),
 }
 if HAS_XGB:
-    models["XGBoost"]  = XGBClassifier(n_estimators=50, random_state=42, n_jobs=-1,
-                                        max_depth=5, eval_metric="logloss", verbosity=0)
+    models["XGBoost"]  = XGBClassifier(n_estimators=150, random_state=42, n_jobs=-1,
+                                        max_depth=7, scale_pos_weight=scale_pos_weight, 
+                                        eval_metric="logloss", verbosity=0)
 if HAS_LGB:
-    models["LightGBM"] = LGBMClassifier(n_estimators=50, random_state=42, n_jobs=-1,
-                                         max_depth=5, verbose=-1)
+    models["LightGBM"] = LGBMClassifier(n_estimators=150, random_state=42, n_jobs=-1,
+                                         max_depth=7, class_weight='balanced', verbose=-1)
 
 results = {}
 for name, m in models.items():
     print(f"  Training {name}…", end=" ", flush=True)
-    m.fit(X_train_sm, y_train_sm)
+    m.fit(X_train_scaled, y_train) # Using weighted training instead of SMOTE
     yp    = m.predict(X_test_scaled)
     yprob = m.predict_proba(X_test_scaled)[:, 1]
     results[name] = {

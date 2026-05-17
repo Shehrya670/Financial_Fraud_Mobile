@@ -20,8 +20,8 @@ class TransactionPayload(BaseModel):
 
     type: str = Field(..., description="PAYMENT, TRANSFER, CASH_OUT, CASH_IN, or DEBIT")
     amount: float = Field(..., gt=0)
-    oldbalanceOrg: float = Field(..., ge=0)
-    oldbalanceDest: float = Field(..., ge=0)
+    oldbalanceOrg: float = Field(default=0.0, ge=0)
+    oldbalanceDest: float = Field(default=0.0, ge=0)
     destType: str = "CUSTOMER"
 
     @field_validator("type", "destType", mode="before")
@@ -30,6 +30,19 @@ class TransactionPayload(BaseModel):
         if not isinstance(value, str) or not value.strip():
             raise ValueError("must be a non-empty string")
         return value.strip().upper()
+
+    @field_validator("amount", "oldbalanceOrg", "oldbalanceDest", mode="before")
+    @classmethod
+    def parse_optional_floats(cls, value):
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return 0.0
+            try:
+                return float(value)
+            except ValueError:
+                raise ValueError("must be a valid number")
+        return value
 
     @field_validator("type")
     @classmethod
@@ -150,13 +163,140 @@ def predict():
     threshold = float(metadata.get("decision_threshold", 0.5)) if metadata else 0.5
 
     reasons = []
-    if transaction.oldbalanceOrg > 0 and transaction.amount > transaction.oldbalanceOrg * 5:
+    
+    # Deterministic Guardrail: Massive Anomalous Transfers from Empty/Dormant Accounts
+    if transaction.type in ("TRANSFER", "CASH_OUT") and transaction.oldbalanceOrg == 0 and transaction.amount > 100000:
         reasons.append(
-            f"High overdraft: amount is {transaction.amount / transaction.oldbalanceOrg:.1f}x the available balance."
+            f"Dormant Account Abuse: Large {transaction.type} of (${transaction.amount:,.2f}) initiated from a newly-created or zero-balance account."
         )
 
-    is_fraud = prob >= threshold
-    risk = "HIGH" if prob >= 0.7 else "MEDIUM" if prob >= 0.3 else "LOW"
+    # Decision Logic (Override ML prediction only for extreme guardrails)
+    if reasons:
+        is_fraud = True
+        prob = max(prob, 0.985)  # Force extremely high fraud probability
+
+        risk = "HIGH"
+    else:
+        is_fraud = prob >= threshold
+        risk = "HIGH" if prob >= 0.7 else "MEDIUM" if prob >= 0.3 else "LOW"
+
+    # 4. Explainable AI (XAI) Basis attribution generator
+    explainability = []
+    
+    # 4a. Type impact
+    if transaction.type == "PAYMENT":
+        explainability.append({
+            "feature": "Transaction Type: PAYMENT",
+            "impact": "DECREASED RISK",
+            "description": "Payment transactions represent commercial trades with historically negligible baseline fraud risk.",
+            "direction": "down",
+            "magnitude": 42
+        })
+    elif transaction.type in ("TRANSFER", "CASH_OUT"):
+        explainability.append({
+            "feature": f"Transaction Type: {transaction.type}",
+            "impact": "INCREASED RISK" if prob > 0.3 else "NEUTRAL",
+            "description": f"{transaction.type} is an immediate-settlement method representing a higher threat baseline.",
+            "direction": "up" if prob > 0.3 else "neutral",
+            "magnitude": 35 if prob > 0.3 else 15
+        })
+    else:
+        explainability.append({
+            "feature": f"Transaction Type: {transaction.type}",
+            "impact": "NEUTRAL",
+            "description": "This transaction type has a statistically standard baseline profile.",
+            "direction": "neutral",
+            "magnitude": 10
+        })
+
+    # 4b. Amount impact
+    if transaction.amount < 1000:
+        explainability.append({
+            "feature": f"Transaction Amount: ${transaction.amount:,.2f}",
+            "impact": "DECREASED RISK",
+            "description": "Low transaction value is fully consistent with everyday personal retail habits.",
+            "direction": "down",
+            "magnitude": 28
+        })
+    elif transaction.amount > 200000:
+        explainability.append({
+            "feature": f"Transaction Amount: ${transaction.amount:,.2f}",
+            "impact": "INCREASED RISK",
+            "description": "Extremely large transfer value is a highly anomalous statistical outlier.",
+            "direction": "up",
+            "magnitude": 45
+        })
+    else:
+        explainability.append({
+            "feature": f"Transaction Amount: ${transaction.amount:,.2f}",
+            "impact": "NEUTRAL",
+            "description": "The amount is within standard mid-tier validation boundaries.",
+            "direction": "neutral",
+            "magnitude": 12
+        })
+
+    # 4c. Balance Coverage impact
+    if transaction.oldbalanceOrg > 0:
+        coverage = transaction.amount / transaction.oldbalanceOrg
+        if coverage <= 0.20:
+            explainability.append({
+                "feature": f"Balance Drawdown Ratio: {coverage:.1%}",
+                "impact": "DECREASED RISK",
+                "description": f"Draws only {coverage:.1%} of origin account capital, representing high liquidity and safe reserve cover.",
+                "direction": "down",
+                "magnitude": 25
+            })
+        elif coverage > 1.0:
+            explainability.append({
+                "feature": "Insufficient Reserve Funds",
+                "impact": "INCREASED RISK",
+                "description": f"Draw exceeds available reserve balance by ${(transaction.amount - transaction.oldbalanceOrg):,.2f}.",
+                "direction": "up",
+                "magnitude": 85
+            })
+        else:
+            explainability.append({
+                "feature": f"Balance Drawdown Ratio: {coverage:.1%}",
+                "impact": "NEUTRAL",
+                "description": "Draw is fully backed by sufficient historical reserves in the account.",
+                "direction": "neutral",
+                "magnitude": 10
+            })
+    else:
+        if transaction.amount > 10000:
+            explainability.append({
+                "feature": "Empty Account Origin",
+                "impact": "INCREASED RISK",
+                "description": "High-value settlement initiated from a zero-balance or dormant origin account.",
+                "direction": "up",
+                "magnitude": 65
+            })
+        else:
+            explainability.append({
+                "feature": "Zero Balance Origin",
+                "impact": "NEUTRAL",
+                "description": "Transaction initiated from a zero-balance account with low-volume activity.",
+                "direction": "neutral",
+                "magnitude": 15
+            })
+
+    # 4d. Recipient profile impact
+    if transaction.destType == "MERCHANT":
+        explainability.append({
+            "feature": "Recipient: Verified Merchant",
+            "impact": "DECREASED RISK",
+            "description": "Transfers to officially registered business/merchant merchant terminals have ultra-low risk profiles.",
+            "direction": "down",
+            "magnitude": 35
+        })
+    else:
+        explainability.append({
+            "feature": "Recipient: Individual Customer",
+            "impact": "NEUTRAL",
+            "description": "Destination is an unverified individual customer profile, representing standard baseline threat.",
+            "direction": "neutral",
+            "magnitude": 8
+        })
 
     return jsonify(
         {
@@ -165,7 +305,8 @@ def predict():
             "decision_threshold": threshold,
             "risk_level": risk,
             "reasons": reasons,
-            "model": metadata["model_name"] if metadata else "LightGBM",
+            "explainability": explainability,
+            "model": "Hybrid (LGBM + Guardrails)" if reasons else (metadata["model_name"] if metadata else "LightGBM"),
             "features_used": MODEL_INPUT_COLUMNS,
             "timestamp": datetime.now().isoformat(),
         }

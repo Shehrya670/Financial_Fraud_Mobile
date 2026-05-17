@@ -3,24 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FraudShield | Enterprise Risk Intelligence</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>FraudShield AI | Financial Fraud Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #0f172a;
-            --primary-light: #1e293b;
-            --accent: #10b981;
-            --accent-hover: #059669;
-            --bg-body: #f8fafc;
-            --bg-card: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --risk-low: #10b981;
-            --risk-med: #f59e0b;
-            --risk-high: #ef4444;
-            --sidebar-width: 260px;
+            /* Deep Obsidian Cyber HUD Palette */
+            --bg-page: #030712;         /* Deep Obsidian Black */
+            --bg-card: #0B0F19;         /* Midnight Slate */
+            --bg-input: #111827;        /* Dark slate input background */
+            --border-color: #1F2937;    /* Slate-800 border */
+            
+            --electric-cyan: #38BDF8;   /* Cyan highlight */
+            --indigo-glow: #6366F1;     /* Indigo highlight */
+            
+            --text-primary: #F9FAFB;    /* Near-white */
+            --text-secondary: #9CA3AF;  /* Cool gray */
+            --text-tertiary: #4B5563;   /* Muted gray */
+            
+            --risk-low: #4ADE80;        /* Mint Neon Green */
+            --risk-low-bg: rgba(74, 222, 128, 0.1);
+            
+            --risk-med: #FBBF24;        /* Amber Gold */
+            --risk-med-bg: rgba(251, 191, 36, 0.1);
+            
+            --risk-high: #F87171;       /* Neon Coral */
+            --risk-high-bg: rgba(248, 113, 113, 0.1);
+            
+            --sidebar-width: 280px;
         }
 
         * {
@@ -31,37 +41,60 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
+            background-color: var(--bg-page);
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: var(--text-primary);
             display: flex;
             min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- Custom Futuristic Scrollbar --- */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-page);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--indigo-glow);
         }
 
         /* --- Sidebar --- */
         .sidebar {
             width: var(--sidebar-width);
-            background-color: var(--primary);
-            color: white;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            padding: 24px 0;
+            padding: 32px 0;
             position: fixed;
             height: 100vh;
             z-index: 100;
         }
 
         .sidebar-brand {
-            padding: 0 24px 32px;
+            padding: 0 28px 40px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 1.25rem;
-            font-weight: 700;
-            letter-spacing: -0.025em;
+            gap: 14px;
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
         }
 
         .sidebar-brand i {
-            color: var(--accent);
+            color: var(--electric-cyan);
+            filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.5));
         }
 
         .nav-menu {
@@ -70,7 +103,7 @@
         }
 
         .nav-item {
-            padding: 2px 16px;
+            padding: 2px 18px;
         }
 
         .nav-link {
@@ -78,66 +111,84 @@
             align-items: center;
             gap: 12px;
             padding: 12px 16px;
-            color: #94a3b8;
+            color: var(--text-secondary);
             text-decoration: none;
             border-radius: 8px;
             font-weight: 500;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
         }
 
         .nav-link:hover, .nav-link.active {
-            color: white;
-            background-color: var(--primary-light);
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .nav-link.active {
+            background: rgba(99, 102, 241, 0.08);
+            font-weight: 600;
+            border-left: 3px solid var(--indigo-glow);
+            border-radius: 0 8px 8px 0;
+            padding-left: 13px;
         }
 
         .nav-link.active i {
-            color: var(--accent);
+            color: var(--indigo-glow);
+            filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.5));
         }
 
         .sidebar-footer {
-            padding: 16px 24px;
-            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 20px 24px;
+            border-top: 1px solid var(--border-color);
         }
 
         .system-status {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.875rem;
-            color: #94a3b8;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
         }
 
         .status-indicator {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: var(--accent);
-            box-shadow: 0 0 8px var(--accent);
+            background-color: var(--risk-low);
+            box-shadow: 0 0 8px var(--risk-low);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.6; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         /* --- Main Content --- */
         .main-content {
             flex: 1;
             margin-left: var(--sidebar-width);
-            padding: 32px 48px;
+            padding: 40px 48px;
         }
 
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 32px;
+            margin-bottom: 36px;
         }
 
         .page-title h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary);
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
         }
 
         .page-title p {
-            color: var(--text-muted);
-            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
             margin-top: 4px;
         }
 
@@ -145,6 +196,10 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            padding: 6px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
         }
 
         .profile-info {
@@ -153,55 +208,144 @@
 
         .profile-name {
             font-weight: 600;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
+            color: var(--text-primary);
         }
 
         .profile-role {
-            font-size: 0.75rem;
-            color: var(--text-muted);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
         }
 
         .avatar {
-            width: 40px;
-            height: 40px;
-            background-color: var(--border);
+            width: 32px;
+            height: 32px;
+            background: var(--indigo-glow);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--primary);
+            color: #FFFFFF;
             font-weight: 700;
+            font-size: 0.8rem;
         }
 
-        /* --- Dashboard Grid --- */
+        /* --- Dashboard Grid - Asymmetric Layout (40% Form, 60% Results) --- */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 24px;
+            grid-template-columns: 0.4fr 0.6fr;
+            gap: 32px;
+            align-items: stretch;
         }
 
         .card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Interactive Mouse Hover Glow */
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: inherit;
+            background: radial-gradient(
+                600px circle at var(--mouse-x, -500px) var(--mouse-y, -500px),
+                rgba(56, 189, 248, 0.06),
+                transparent 40%
+            );
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover::after {
+            opacity: 1;
+        }
+
+        /* --- Floating Gradient HUD Accent Border --- */
+        .card.risk-card {
+            position: relative;
+            background: var(--bg-card);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid transparent;
+            background-clip: padding-box;
+            border-left: 5px solid var(--border-color);
+            transition: border-left-color 0.4s ease;
+        }
+
+        .card.risk-card::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            z-index: -1;
+            margin: -1px;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(56, 189, 248, 0.25) 50%, transparent 100%);
+            pointer-events: none;
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+            flex-shrink: 0;
         }
 
         .card-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--primary);
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
         }
 
-        /* --- Form Elements --- */
+        /* --- Validation Error Box --- */
+        .error-container {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            color: var(--risk-high);
+            font-size: 0.85rem;
+            animation: slideDown 0.3s ease;
+        }
+
+        .error-header {
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.88rem;
+        }
+
+        .error-list {
+            padding-left: 18px;
+            line-height: 1.45;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Form Elements - Completely Borderless Fields --- */
         .form-group {
             margin-bottom: 20px;
         }
@@ -214,37 +358,103 @@
 
         label {
             display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            margin-bottom: 6px;
-            color: var(--primary-light);
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        input, select {
+        /* Borderless container with bottom-only line */
+        .input-wrapper {
+            position: relative;
             width: 100%;
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.875rem;
-            color: var(--text-main);
-            transition: border-color 0.2s;
+            background: var(--bg-input);
+            border-radius: 6px 6px 0 0;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
         }
 
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--accent);
+        .input-wrapper:focus-within {
+            border-bottom: 1px solid var(--indigo-glow);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
         }
 
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
+        .input-wrapper input, .input-wrapper select {
+            width: 100%;
+            padding: 10px 32px 10px 42px;
+            height: 44px;
+            background: transparent;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
+            font-size: 0.88rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        /* Custom clean select dropdown indicator placement */
+        .input-wrapper select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            cursor: pointer;
+        }
+
+        .input-wrapper select option {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .input-wrapper:has(select)::after {
+            content: '\f107';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .input-wrapper .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            pointer-events: none;
+            transition: color 0.2s ease;
+        }
+
+        .input-wrapper input:focus ~ .input-icon, 
+        .input-wrapper select:focus ~ .input-icon {
+            color: var(--electric-cyan);
+        }
+
+        input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.5;
+        }
+
+        /* --- Smaller, Sharp White Button --- */
+        .btn-primary {
+            background: #FFFFFF;
+            color: #000000;
+            border: 1px solid #FFFFFF;
+            height: 42px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             cursor: pointer;
             width: 100%;
-            transition: background-color 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -252,7 +462,22 @@
         }
 
         .btn-primary:hover {
-            background-color: #1e293b;
+            background: #000000;
+            color: #FFFFFF;
+            border-color: #FFFFFF;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary:disabled {
+            background: var(--border-color);
+            color: var(--text-tertiary);
+            border-color: var(--border-color);
+            cursor: not-allowed;
+            box-shadow: none;
         }
 
         /* --- Analysis Results --- */
@@ -261,182 +486,289 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
+            flex: 1;
             text-align: center;
+            width: 100%;
         }
 
         .empty-state {
-            color: var(--text-muted);
+            color: var(--text-secondary);
         }
 
         .empty-state i {
             font-size: 3rem;
             margin-bottom: 16px;
-            opacity: 0.2;
+            color: var(--text-tertiary);
         }
 
+        .empty-state p {
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        /* --- Smooth Slide-in Micro-Animation --- */
         .risk-display {
             width: 100%;
+            animation: slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            opacity: 0;
+            transform: translateX(30px);
         }
 
+        @keyframes slideInRight {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* --- Modern Status Badges --- */
         .risk-badge {
             display: inline-block;
-            padding: 6px 16px;
+            padding: 6px 14px;
             border-radius: 50px;
             font-weight: 700;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 16px;
+            letter-spacing: 0.06em;
+            margin-bottom: 24px;
         }
 
-        .risk-badge.low { background-color: #d1fae5; color: #065f46; }
-        .risk-badge.med { background-color: #fef3c7; color: #92400e; }
-        .risk-badge.high { background-color: #fee2e2; color: #991b1b; }
+        .risk-badge.low { background: var(--risk-low-bg); color: var(--risk-low); }
+        .risk-badge.med { background: var(--risk-med-bg); color: var(--risk-med); }
+        .risk-badge.high { background: var(--risk-high-bg); color: var(--risk-high); }
 
+        /* --- Sleek Speedometer threat Arc Gauge --- */
         .score-circle {
             position: relative;
-            width: 180px;
-            height: 180px;
-            margin: 0 auto 24px;
+            width: 220px;
+            height: 120px;
+            margin: 0 auto 28px;
         }
 
         .score-svg {
-            transform: rotate(-90deg);
+            overflow: visible;
         }
 
-        .score-bg {
+        .score-bg-path {
             fill: none;
-            stroke: #f1f5f9;
-            stroke-width: 12;
-        }
-
-        .score-fill {
-            fill: none;
-            stroke: var(--accent);
+            stroke: #1F2937;
             stroke-width: 12;
             stroke-linecap: round;
-            stroke-dasharray: 440;
-            stroke-dashoffset: 440;
-            transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .score-fill-path {
+            fill: none;
+            stroke: url(#cyanIndigoGrad);
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-dasharray: 283; /* PI * Radius 90 */
+            stroke-dashoffset: 283;
+            transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0px 0px 8px rgba(99, 102, 241, 0.6));
         }
 
         .score-text {
             position: absolute;
-            top: 50%;
+            bottom: 0px;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             text-align: center;
         }
 
         .score-value {
+            font-family: 'Space Mono', monospace;
             font-size: 2.25rem;
-            font-weight: 800;
-            color: var(--primary);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
         }
 
         .score-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
+            font-size: 0.65rem;
+            color: var(--text-secondary);
             text-transform: uppercase;
             font-weight: 600;
+            letter-spacing: 0.08em;
+            margin-top: 2px;
         }
 
-        /* --- History Table --- */
+        .report-section {
+            background: #0E131F;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 18px;
+            text-align: left;
+        }
+
+        .report-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .report-desc {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        /* --- Explainable AI (XAI) Panel --- */
+        .xai-section {
+            width: 100%;
+            margin-top: 24px;
+            text-align: left;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 20px;
+        }
+        
+        .xai-header {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .xai-factor-card {
+            background: #0E131F;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .xai-factor-card.down { border-left: 4px solid var(--risk-low); }
+        .xai-factor-card.up { border-left: 4px solid var(--risk-high); }
+        .xai-factor-card.neutral { border-left: 4px solid var(--text-secondary); }
+
+        .xai-factor-card:hover {
+            border-color: var(--electric-cyan);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.1);
+        }
+
+        .xai-icon {
+            font-size: 1rem;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .xai-icon.down { color: var(--risk-low); }
+        .xai-icon.up { color: var(--risk-high); }
+        .xai-icon.neutral { color: var(--text-secondary); }
+
+        .xai-content {
+            flex: 1;
+        }
+
+        .xai-title {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .xai-impact-label {
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .xai-impact-label.down { color: var(--risk-low); }
+        .xai-impact-label.up { color: var(--risk-high); }
+        .xai-impact-label.neutral { color: var(--text-secondary); }
+
+        .xai-desc {
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            line-height: 1.4;
+        }
+
+        /* --- Audit Logs --- */
         .history-card {
             grid-column: 1 / span 2;
-            margin-top: 24px;
         }
 
         .table-responsive {
             overflow-x: auto;
+            margin-top: 10px;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0 4px;
         }
 
         th {
             text-align: left;
-            padding: 12px 16px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
+            padding: 10px 14px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-secondary);
             text-transform: uppercase;
-            border-bottom: 1px solid var(--border);
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid var(--border-color);
         }
 
         td {
-            padding: 16px;
-            font-size: 0.875rem;
-            border-bottom: 1px solid var(--border);
+            padding: 12px 14px;
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        tr:hover td {
+            background: #111827;
+        }
+
+        td:first-child {
+            border-left: 1px solid var(--border-color);
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        td:last-child {
+            border-right: 1px solid var(--border-color);
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
         }
 
         .badge-table {
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .badge-table.low { background-color: #f0fdf4; color: #166534; }
-        .badge-table.medium { background-color: #fffbeb; color: #92400e; }
-        .badge-table.high { background-color: #fef2f2; color: #991b1b; }
-
-        /* --- Model Stats (Hidden/Minimized) --- */
-        .system-audit {
-            margin-top: 32px;
-            padding-top: 32px;
-            border-top: 1px solid var(--border);
-        }
-
-        .audit-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .audit-toggle:hover {
-            color: var(--primary);
-        }
-
-        .audit-content {
-            display: none;
-            margin-top: 16px;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-        }
-
-        .stat-box {
-            padding: 16px;
-            background-color: #f1f5f9;
-            border-radius: 8px;
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-
-        .stat-value {
+            font-size: 0.7rem;
             font-weight: 700;
-            font-size: 1.125rem;
-            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: inline-block;
         }
+
+        .badge-table.low { background: var(--risk-low-bg); color: var(--risk-low); }
+        .badge-table.medium { background: var(--risk-med-bg); color: var(--risk-med); }
+        .badge-table.high { background: var(--risk-high-bg); color: var(--risk-high); }
 
         /* --- Loading Spinner --- */
         .spinner {
             display: none;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top: 2px solid white;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #000000;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
@@ -453,32 +785,32 @@
     <div class="sidebar">
         <div class="sidebar-brand">
             <i class="fas fa-shield-halved"></i>
-            <span>FraudShield</span>
+            <span>FraudShield AI</span>
         </div>
         <ul class="nav-menu">
             <li class="nav-item">
                 <a href="#" class="nav-link active">
                     <i class="fas fa-chart-line"></i>
-                    <span>Risk Analysis</span>
+                    <span>Fraud Analytics</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link">
                     <i class="fas fa-history"></i>
-                    <span>Audit Log</span>
+                    <span>Audit Log Stream</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a href="#" class="nav-link">
                     <i class="fas fa-cog"></i>
-                    <span>Settings</span>
+                    <span>System Config</span>
                 </a>
             </li>
         </ul>
         <div class="sidebar-footer">
             <div class="system-status">
                 <div class="status-indicator"></div>
-                <span>Risk Engine Active</span>
+                <span>Core AI Engine Active</span>
             </div>
         </div>
     </div>
@@ -487,66 +819,91 @@
     <div class="main-content">
         <header>
             <div class="page-title">
-                <h2>Transaction Intelligence</h2>
-                <p>Enterprise-grade fraud detection & risk assessment</p>
+                <h2>Financial Fraud Analytics</h2>
+                <p>Real-time transaction analysis & explainable AI risk scoring</p>
             </div>
             <div class="user-profile">
                 <div class="profile-info">
                     <div class="profile-name">Risk Analyst</div>
-                    <div class="profile-role">Admin Access</div>
+                    <div class="profile-role">Level 4 Auth</div>
                 </div>
                 <div class="avatar">RA</div>
             </div>
         </header>
 
         <div class="dashboard-grid">
-            <!-- Analysis Tool -->
+            <!-- Telemetry Stream (Left 40%) -->
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Analysis Tool</h3>
+                    <h3 class="card-title"><i class="fas fa-receipt" style="margin-right: 8px; color: var(--electric-cyan);"></i> Transaction Telemetry</h3>
                 </div>
+                
+                <!-- Dynamic Error Alert Banner -->
+                <div id="error-container" class="error-container" style="display: none;"></div>
+
                 <form id="analysis-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Transaction Type</label>
-                            <select id="type" name="type">
-                                <option value="PAYMENT">Payment</option>
-                                <option value="TRANSFER">Transfer</option>
-                                <option value="CASH_OUT">Cash Out</option>
-                                <option value="CASH_IN">Cash In</option>
-                                <option value="DEBIT">Debit</option>
-                            </select>
+                            <label>Type</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-exchange-alt input-icon"></i>
+                                <select id="type" name="type">
+                                    <option value="PAYMENT">Payment</option>
+                                    <option value="TRANSFER">Transfer</option>
+                                    <option value="CASH_OUT">Cash Out</option>
+                                    <option value="CASH_IN">Cash In</option>
+                                    <option value="DEBIT">Debit</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label>Recipient Type</label>
-                            <select id="destType" name="destType">
-                                <option value="CUSTOMER">Individual Customer</option>
-                                <option value="MERCHANT">Verified Merchant</option>
-                            </select>
+                            <label>Recipient</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user-tag input-icon"></i>
+                                <select id="destType" name="destType">
+                                    <option value="CUSTOMER">Individual</option>
+                                    <option value="MERCHANT">Merchant</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Transaction Amount (USD)</label>
-                        <input type="number" id="amount" name="amount" placeholder="0.00" step="0.01" required>
+                        <label>Amount (USD)</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-dollar-sign input-icon"></i>
+                            <input type="number" id="amount" name="amount" placeholder="e.g. 150.00" step="0.01" required>
+                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Origin Initial Balance</label>
-                            <input type="number" id="oldbalanceOrg" name="oldbalanceOrg" placeholder="0.00" step="0.01">
+                            <label>Origin Init Balance</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-wallet input-icon"></i>
+                                <input type="number" id="oldbalanceOrg" name="oldbalanceOrg" placeholder="0.00" step="0.01">
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Origin New Balance</label>
-                            <input type="number" id="newbalanceOrig" name="newbalanceOrig" placeholder="0.00" step="0.01">
+                            <div class="input-wrapper">
+                                <i class="fas fa-arrow-right-long input-icon"></i>
+                                <input type="number" id="newbalanceOrig" name="newbalanceOrig" placeholder="0.00" step="0.01">
+                            </div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Destination Initial Balance</label>
-                            <input type="number" id="oldbalanceDest" name="oldbalanceDest" placeholder="0.00" step="0.01">
+                            <label>Dest Init Balance</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-wallet input-icon"></i>
+                                <input type="number" id="oldbalanceDest" name="oldbalanceDest" placeholder="0.00" step="0.01">
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label>Destination New Balance</label>
-                            <input type="number" id="newbalanceDest" name="newbalanceDest" placeholder="0.00" step="0.01">
+                            <label>Dest New Balance</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-arrow-right-long input-icon"></i>
+                                <input type="number" id="newbalanceDest" name="newbalanceDest" placeholder="0.00" step="0.01">
+                            </div>
                         </div>
                     </div>
                     <button type="submit" class="btn-primary" id="submit-btn">
@@ -556,33 +913,49 @@
                 </form>
             </div>
 
-            <!-- Analysis Result -->
-            <div class="card">
+            <!-- Analysis Result (Right 60%) -->
+            <div class="card risk-card" id="risk-card">
                 <div class="card-header">
-                    <h3 class="card-title">Risk Assessment</h3>
+                    <h3 class="card-title"><i class="fas fa-shield-halved" style="margin-right: 8px; color: var(--indigo-glow);"></i> Risk Assessment Hub</h3>
                 </div>
                 <div class="analysis-result" id="result-container">
                     <div class="empty-state" id="empty-state">
-                        <i class="fas fa-magnifying-glass-chart"></i>
-                        <p>Submit a transaction to generate a risk assessment report.</p>
+                        <i class="fas fa-terminal"></i>
+                        <p style="margin-top: 16px;">Risk analysis engine standby. Submit transaction telemetry on the left to initialize tracing.</p>
                     </div>
                     
                     <!-- Result Display (Hidden initially) -->
                     <div class="risk-display" id="result-display" style="display: none;">
-                        <div class="risk-badge" id="risk-badge">Low Risk</div>
+                        <div class="risk-badge" id="risk-badge">Verified Legitimate</div>
                         <div class="score-circle">
-                            <svg class="score-svg" width="180" height="180">
-                                <circle class="score-bg" cx="90" cy="90" r="70"></circle>
-                                <circle class="score-fill" id="score-fill" cx="90" cy="90" r="70"></circle>
+                            <svg class="score-svg" width="220" height="120">
+                                <defs>
+                                    <linearGradient id="cyanIndigoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" stop-color="#38BDF8" />
+                                        <stop offset="100%" stop-color="#6366F1" />
+                                    </linearGradient>
+                                </defs>
+                                <path class="score-bg-path" d="M 20 110 A 90 90 0 0 1 200 110"></path>
+                                <path class="score-fill-path" id="score-fill" d="M 20 110 A 90 90 0 0 1 200 110"></path>
                             </svg>
                             <div class="score-text">
                                 <div class="score-value" id="score-value">0%</div>
-                                <div class="score-label">Risk Score</div>
+                                <div class="score-label">FRAUD_PROBABILITY</div>
                             </div>
                         </div>
-                        <div style="text-align: left; font-size: 0.875rem;">
-                            <p style="margin-bottom: 8px;"><strong id="verdict-text">Legitimate Transaction</strong></p>
-                            <p style="color: var(--text-muted);" id="recommendation">The transaction pattern aligns with standard behavior. No immediate action required.</p>
+                        <div class="report-section">
+                            <div class="report-title" id="verdict-text">Legitimate Transaction</div>
+                            <p class="report-desc" id="recommendation">The transaction pattern aligns with standard behavior. No immediate action required.</p>
+                        </div>
+                        
+                        <!-- Explainable AI Dynamic Attribution -->
+                        <div class="xai-section" id="xai-section" style="display: none;">
+                            <div class="xai-header">
+                                <i class="fas fa-brain" style="color: var(--electric-cyan);"></i> EXPLAINABLE_AI_ATTRIBUTION
+                            </div>
+                            <div class="xai-factors" id="xai-factors">
+                                <!-- Attributions will be appended dynamically by JavaScript -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -591,8 +964,8 @@
             <!-- History -->
             <div class="card history-card">
                 <div class="card-header">
-                    <h3 class="card-title">Recent Audit Log</h3>
-                    <button style="font-size: 0.75rem; background: none; border: none; color: var(--accent); font-weight: 600; cursor: pointer;">View All Logs</button>
+                    <h3 class="card-title"><i class="fas fa-history" style="margin-right: 8px; color: var(--indigo-glow);"></i> Audit Log Stream</h3>
+                    <button style="font-size: 0.75rem; background: none; border: none; color: var(--electric-cyan); font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em;">Export Session Logs</button>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -607,15 +980,13 @@
                         </thead>
                         <tbody id="history-body">
                             <tr>
-                                <td colspan="5" style="text-align: center; color: var(--text-muted);">No logs available in current session.</td>
+                                <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 30px;">No logs available in current session.</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-
-        <!-- System Audit Section Removed -->
     </div>
 
     <script>
@@ -630,38 +1001,19 @@
         const verdictText = document.getElementById('verdict-text');
         const recommendation = document.getElementById('recommendation');
         const historyBody = document.getElementById('history-body');
+        const errorContainer = document.getElementById('error-container');
+        
+        const xaiSection = document.getElementById('xai-section');
+        const xaiFactors = document.getElementById('xai-factors');
 
-        // History storage
         let scanHistory = [];
-
-        // Fetch system stats removed for UI cleaniness
-        /*
-        async function fetchSystemStats() {
-            try {
-                const response = await fetch('/health');
-                const data = await response.json();
-                if (data.status === 'healthy') {
-                    // document.getElementById('stat-model').textContent = data.model;
-                    // ...
-                }
-            } catch (err) {
-                console.error("Audit fetch failed", err);
-            }
-        }
-        fetchSystemStats();
-        */
-
-        // Audit toggle removed
-        /*
-        auditToggle.addEventListener('click', () => {
-            const isVisible = auditContent.style.display === 'grid';
-            auditContent.style.display = isVisible ? 'none' : 'grid';
-            auditIcon.className = isVisible ? 'fas fa-chevron-right' : 'fas fa-chevron-down';
-        });
-        */
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Clear prior errors
+            errorContainer.style.display = 'none';
+            errorContainer.innerHTML = '';
             
             // Loading state
             submitBtn.disabled = true;
@@ -677,15 +1029,32 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
+                
                 const result = await response.json();
                 
-                if (result.error) throw new Error(result.error);
+                if (!response.ok) {
+                    if (result.details && result.details.length > 0) {
+                        const items = result.details.map(d => `<li><strong>${d.field.replace('body.', '')}</strong>: ${d.message}</li>`).join('');
+                        errorContainer.innerHTML = `
+                            <div class="error-header"><i class="fas fa-exclamation-triangle"></i> Input Validation Failed</div>
+                            <ul class="error-list">${items}</ul>
+                        `;
+                    } else {
+                        errorContainer.innerHTML = `
+                            <div class="error-header"><i class="fas fa-exclamation-triangle"></i> System Failure</div>
+                            <p style="padding-left: 4px;">${result.error || "Unknown server response."}</p>
+                        `;
+                    }
+                    errorContainer.style.display = 'block';
+                    errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    throw new Error("Validation Error");
+                }
                 
                 showResult(result, data);
                 updateHistory(result, data);
                 
             } catch (err) {
-                alert("Risk Analysis Failed: " + err.message);
+                console.warn("Analysis halted: ", err.message);
             } finally {
                 submitBtn.disabled = false;
                 btnSpinner.style.display = 'none';
@@ -700,41 +1069,110 @@
             const prob = result.fraud_probability;
             const pct = Math.round(prob * 100);
             
-            scoreValue.textContent = pct + '%';
-            
-            // Gauge animation reset
+            // Speedometer threats reset (dashoffset range=283)
             scoreFill.style.transition = 'none';
-            scoreFill.style.strokeDashoffset = 440;
-            // Force reflow
-            void scoreFill.offsetWidth;
+            scoreFill.style.strokeDashoffset = 283;
+            scoreValue.textContent = '0%'; // Set initial state cleanly
+            void scoreFill.offsetWidth; // Reflow trigger
             
-            scoreFill.style.transition = 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)';
-            const offset = 440 - (440 * prob);
+            scoreFill.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+            const offset = 283 - (283 * prob);
             scoreFill.style.strokeDashoffset = offset;
             
-            // UI Logic based on risk
-            if (prob < 0.3) {
-                riskBadge.textContent = "Low Risk";
-                riskBadge.className = "risk-badge low";
-                scoreFill.style.stroke = "var(--risk-low)";
-                verdictText.textContent = "Verified Legitimate";
-                recommendation.textContent = "This transaction profile matches verified patterns. No further verification required.";
-            } else if (prob < 0.7) {
-                riskBadge.textContent = "Medium Risk";
-                riskBadge.className = "risk-badge med";
-                scoreFill.style.stroke = "var(--risk-med)";
-                verdictText.textContent = "Anomalous Activity";
-                recommendation.textContent = "Transaction exhibits minor deviations. Recommend second-factor authentication or internal review.";
+            // Animated Number Counter
+            let currentPct = 0;
+            const targetPct = pct;
+            const duration = 1200; // Matches CSS transition duration
+            const interval = 16;   // ~60fps
+            const step = targetPct === 0 ? 0 : (targetPct / (duration / interval));
+            
+            if (window.counterInterval) clearInterval(window.counterInterval);
+            if (targetPct > 0) {
+                window.counterInterval = setInterval(() => {
+                    currentPct += step;
+                    if (currentPct >= targetPct) {
+                        currentPct = targetPct;
+                        scoreValue.textContent = targetPct + '%';
+                        clearInterval(window.counterInterval);
+                    } else {
+                        scoreValue.textContent = Math.round(currentPct) + '%';
+                    }
+                }, interval);
             } else {
-                riskBadge.textContent = "High Risk";
+                scoreValue.textContent = '0%';
+            }
+            
+            // Dynamic Left-Edge Accent Stripe on the Risk Card
+            const riskCard = document.getElementById('risk-card');
+
+            // UI Logic based on risk level
+            let verdict = "";
+            let recMessage = "";
+
+            if (prob < 0.3) {
+                riskBadge.textContent = "Verified Legitimate";
+                riskBadge.className = "risk-badge low";
+                riskCard.style.borderLeftColor = "var(--risk-low)";
+                verdict = "Verified Legitimate";
+                recMessage = "This transaction profile matches verified patterns. No further verification required.";
+            } else if (prob < 0.7) {
+                riskBadge.textContent = "Anomalous Activity";
+                riskBadge.className = "risk-badge med";
+                riskCard.style.borderLeftColor = "var(--risk-med)";
+                verdict = "Anomalous Activity";
+                recMessage = "Transaction exhibits minor deviations. Recommend second-factor authentication or internal review.";
+            } else {
+                riskBadge.textContent = "Critical Fraud Alert";
                 riskBadge.className = "risk-badge high";
-                scoreFill.style.stroke = "var(--risk-high)";
-                verdictText.textContent = "Critical Fraud Alert";
-                let desc = "Severe risk detected. Transaction blocked.";
+                riskCard.style.borderLeftColor = "var(--risk-high)";
+                verdict = "Critical Fraud Alert";
+                
+                recMessage = "Severe risk detected. Transaction blocked.";
                 if (result.reasons && result.reasons.length > 0) {
-                    desc += " Reason: " + result.reasons.join(" ");
+                    recMessage += " Reason: " + result.reasons.join(" ");
                 }
-                recommendation.textContent = desc;
+            }
+            
+            verdictText.textContent = verdict;
+            
+            // Terminal Typing effect for recommendation
+            recommendation.textContent = '';
+            let charIndex = 0;
+            if (window.typeWriter) clearInterval(window.typeWriter);
+            window.typeWriter = setInterval(() => {
+                if (charIndex < recMessage.length) {
+                    recommendation.textContent += recMessage.charAt(charIndex);
+                    charIndex++;
+                } else {
+                    clearInterval(window.typeWriter);
+                }
+            }, 15);
+
+            // Render dynamic Explainable AI basis cards
+            if (result.explainability && result.explainability.length > 0) {
+                xaiFactors.innerHTML = result.explainability.map(factor => {
+                    let icon = 'fa-circle-info';
+                    if (factor.direction === 'down') icon = 'fa-circle-down';
+                    else if (factor.direction === 'up') icon = 'fa-circle-up';
+                    
+                    return `
+                        <div class="xai-factor-card ${factor.direction}">
+                            <div class="xai-icon ${factor.direction}">
+                                <i class="fas ${icon}"></i>
+                            </div>
+                            <div class="xai-content">
+                                <div class="xai-title">
+                                    <span>${factor.feature}</span>
+                                    <span class="xai-impact-label ${factor.direction}">${factor.impact}</span>
+                                </div>
+                                <div class="xai-desc">${factor.description}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                xaiSection.style.display = 'block';
+            } else {
+                xaiSection.style.display = 'none';
             }
         }
 
@@ -749,7 +1187,6 @@
             });
             
             if (scanHistory.length > 5) scanHistory.pop();
-            
             renderHistory();
         }
 
@@ -766,6 +1203,18 @@
                 </tr>
             `).join('');
         }
+
+        // Interactive Card Hover Glow
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
     </script>
 </body>
 </html>

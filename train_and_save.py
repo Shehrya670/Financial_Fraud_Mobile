@@ -1,155 +1,192 @@
 """
-train_and_save.py
------------------
-Trains all fraud-detection models, picks the best, and saves:
-  models/best_model.pkl          ← standard pickle
-  models/best_model.joblib       ← joblib (faster for sklearn)
-  models/scaler.pkl
-  models/scaler.joblib
-  models/feature_names.joblib
-  models/model_metadata.json
+Train the fraud-detection model and save a single serving pipeline.
 
-Run:  python train_and_save.py
+The production pipeline intentionally excludes post-transaction leakage fields
+such as new balances and balance-error calculations. It uses only fields that
+can be known before or at authorization time.
 """
 
-import os, json, pickle, joblib
-import pandas as pd
+import json
+import os
+import pickle
+from pathlib import Path
+
+import joblib
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import roc_auc_score, f1_score, precision_score, recall_score
-from imblearn.over_sampling import SMOTE
-import warnings; warnings.filterwarnings("ignore")
+import pandas as pd
+from lightgbm import LGBMClassifier
+from sklearn.compose import ColumnTransformer
+from sklearn.metrics import (
+    average_precision_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-# Optional
-try:
-    from xgboost import XGBClassifier; HAS_XGB = True
-except ImportError:
-    HAS_XGB = False; print("XGBoost not found – skipping")
+from ml_pipeline import CATEGORICAL_FEATURES, MODEL_INPUT_COLUMNS, NUMERIC_FEATURES, NoLeakageFeatureBuilder
 
-try:
-    from lightgbm import LGBMClassifier; HAS_LGB = True
-except ImportError:
-    HAS_LGB = False; print("LightGBM not found – skipping")
 
-# ── 1. Load dataset ──────────────────────────────────────────────────────────
-CSV = "PS_20174392719_1491204439457_log.csv"
-print(f"Loading {CSV} (20 % sample)…")
-df = pd.read_csv(CSV).sample(frac=0.2, random_state=42)
-print(f"  Shape: {df.shape}")
+CSV_PATH = Path("PS_20174392719_1491204439457_log.csv")
+MODEL_DIR = Path("models")
+SAMPLE_FRAC = float(os.environ.get("TRAIN_SAMPLE_FRAC", "0.2"))
+RANDOM_STATE = 42
 
-# ── 2. Preprocess & Feature Engineering ──────────────────────────────────────
-def engineer_features(df_input):
-    df_res = df_input.copy()
-    
-    # 1. Merchant Detection (PaySim specific: nameDest starting with M)
-    # We create this before dropping the column
-    df_res['isMerchant'] = df_res['nameDest'].str.startswith('M').astype(int)
-    
-    # 2. Logical consistency features
-    df_res['errorBalanceOrg'] = df_res['newbalanceOrig'] + df_res['amount'] - df_res['oldbalanceOrg']
-    
-    # For Merchants, destination balance info is missing (always 0), 
-    # so we set error to 0 to avoid false 'imbalance' signals.
-    df_res['errorBalanceDest'] = df_res['oldbalanceDest'] + df_res['amount'] - df_res['newbalanceDest']
-    df_res.loc[df_res['isMerchant'] == 1, 'errorBalanceDest'] = 0
-    
-    return df_res
 
-drop_cols = ["nameOrig", "nameDest", "isFlaggedFraud", "step"]
-df_clean  = engineer_features(df)
-df_clean  = df_clean.drop(columns=drop_cols)
-df_clean  = pd.get_dummies(df_clean, columns=["type"], drop_first=True)
+def load_dataset() -> pd.DataFrame:
+    if not CSV_PATH.exists():
+        raise FileNotFoundError(f"Dataset not found: {CSV_PATH}")
 
-X = df_clean.drop("isFraud", axis=1)
-y = df_clean["isFraud"]
+    print(f"Loading {CSV_PATH}...")
+    df = pd.read_csv(CSV_PATH)
+    if 0 < SAMPLE_FRAC < 1:
+        print(f"Sampling {SAMPLE_FRAC:.0%} of rows for repeatable local training...")
+        df = df.sample(frac=SAMPLE_FRAC, random_state=RANDOM_STATE)
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y)
+    return df.sort_values("step").reset_index(drop=True)
 
-scaler         = StandardScaler()
-X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train), columns=X_train.columns)
-X_test_scaled  = pd.DataFrame(scaler.transform(X_test),      columns=X_test.columns)
 
-feature_names  = X_train_scaled.columns.tolist()
-print(f"  Features: {feature_names}")
+def time_split(df: pd.DataFrame):
+    train_end = int(len(df) * 0.70)
+    val_end = int(len(df) * 0.85)
+    train_df = df.iloc[:train_end]
+    val_df = df.iloc[train_end:val_end]
+    test_df = df.iloc[val_end:]
+    return train_df, val_df, test_df
 
-# ── 3. Data Handling ─────────────────────────────────────────────────────────
-# We will use class_weight or scale_pos_weight instead of SMOTE for better precision
-print("Calculating class weights…")
-neg, pos = np.bincount(y_train)
-scale_pos_weight = neg / pos
-print(f"  Pos:Neg Ratio = 1:{scale_pos_weight:.1f}")
 
-# ── 4. Train all models ───────────────────────────────────────────────────────
-models = {
-    "Logistic Regression": LogisticRegression(random_state=42, max_iter=1000, class_weight='balanced'),
-    "Decision Tree":       DecisionTreeClassifier(random_state=42, max_depth=10, class_weight='balanced'),
-    "Random Forest":       RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1, max_depth=15, class_weight='balanced'),
-    "Gradient Boosting":   GradientBoostingClassifier(n_estimators=100, random_state=42, max_depth=7),
-}
-if HAS_XGB:
-    models["XGBoost"]  = XGBClassifier(n_estimators=150, random_state=42, n_jobs=-1,
-                                        max_depth=7, scale_pos_weight=scale_pos_weight, 
-                                        eval_metric="logloss", verbosity=0)
-if HAS_LGB:
-    models["LightGBM"] = LGBMClassifier(n_estimators=150, random_state=42, n_jobs=-1,
-                                         max_depth=7, class_weight='balanced', verbose=-1)
+def build_pipeline(y_train: pd.Series) -> Pipeline:
+    neg, pos = np.bincount(y_train)
+    scale_pos_weight = neg / max(pos, 1)
+    print(f"Training fraud ratio: 1:{scale_pos_weight:.1f}")
 
-results = {}
-for name, m in models.items():
-    print(f"  Training {name}…", end=" ", flush=True)
-    m.fit(X_train_scaled, y_train) # Using weighted training instead of SMOTE
-    yp    = m.predict(X_test_scaled)
-    yprob = m.predict_proba(X_test_scaled)[:, 1]
-    results[name] = {
-        "model":         m,
-        "roc_auc":       roc_auc_score(y_test, yprob),
-        "f1":            f1_score(y_test, yp),
-        "precision":     precision_score(y_test, yp),
-        "recall":        recall_score(y_test, yp),
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("numeric", StandardScaler(), NUMERIC_FEATURES),
+            ("type", OneHotEncoder(handle_unknown="ignore", sparse_output=False), CATEGORICAL_FEATURES),
+        ],
+        remainder="drop",
+    )
+    preprocessor.set_output(transform="pandas")
+
+    model = LGBMClassifier(
+        n_estimators=250,
+        learning_rate=0.05,
+        max_depth=7,
+        num_leaves=31,
+        class_weight="balanced",
+        random_state=RANDOM_STATE,
+        n_jobs=-1,
+        verbose=-1,
+    )
+
+    return Pipeline(
+        steps=[
+            ("features", NoLeakageFeatureBuilder()),
+            ("preprocess", preprocessor),
+            ("model", model),
+        ]
+    )
+
+
+def choose_threshold(y_true: pd.Series, probabilities: np.ndarray) -> tuple[float, dict]:
+    candidates = np.linspace(0.01, 0.99, 99)
+    best_threshold = 0.5
+    best_metrics = {"f1": -1.0}
+
+    for threshold in candidates:
+        preds = probabilities >= threshold
+        metrics = classification_metrics(y_true, probabilities, preds)
+        if metrics["f1_score"] > best_metrics["f1"]:
+            best_threshold = float(threshold)
+            best_metrics = {"f1": metrics["f1_score"], **metrics}
+
+    best_metrics.pop("f1", None)
+    return best_threshold, best_metrics
+
+
+def classification_metrics(y_true, probabilities, preds) -> dict:
+    tn, fp, fn, tp = confusion_matrix(y_true, preds, labels=[0, 1]).ravel()
+    fpr = fp / (fp + tn) if (fp + tn) else 0.0
+    fnr = fn / (fn + tp) if (fn + tp) else 0.0
+
+    return {
+        "roc_auc": float(roc_auc_score(y_true, probabilities)),
+        "pr_auc": float(average_precision_score(y_true, probabilities)),
+        "f1_score": float(f1_score(y_true, preds, zero_division=0)),
+        "precision": float(precision_score(y_true, preds, zero_division=0)),
+        "recall": float(recall_score(y_true, preds, zero_division=0)),
+        "false_positive_rate": float(fpr),
+        "false_negative_rate": float(fnr),
+        "confusion_matrix": {
+            "tn": int(tn),
+            "fp": int(fp),
+            "fn": int(fn),
+            "tp": int(tp),
+        },
     }
-    r = results[name]
-    print(f"ROC-AUC={r['roc_auc']:.4f}  F1={r['f1']:.4f}")
 
-# ── 5. Select best ────────────────────────────────────────────────────────────
-best_name  = max(results, key=lambda n: results[n]["roc_auc"])
-best_model = results[best_name]["model"]
-best_r     = results[best_name]
-print(f"\nBest model: {best_name}  (ROC-AUC={best_r['roc_auc']:.4f})")
 
-# ── 6. Save artefacts ─────────────────────────────────────────────────────────
-os.makedirs("models", exist_ok=True)
+def main():
+    df = load_dataset()
+    train_df, val_df, test_df = time_split(df)
+    print(f"Rows: train={len(train_df):,}, val={len(val_df):,}, test={len(test_df):,}")
 
-# joblib (preferred for sklearn – smaller, faster)
-joblib.dump(best_model,   "models/best_model.joblib")
-joblib.dump(scaler,       "models/scaler.joblib")
-joblib.dump(feature_names,"models/feature_names.joblib")
+    X_train = train_df.drop(columns=["isFraud"])
+    y_train = train_df["isFraud"]
+    X_val = val_df.drop(columns=["isFraud"])
+    y_val = val_df["isFraud"]
+    X_test = test_df.drop(columns=["isFraud"])
+    y_test = test_df["isFraud"]
 
-# pickle (alternative)
-with open("models/best_model.pkl", "wb") as f:
-    pickle.dump(best_model, f)
-with open("models/scaler.pkl", "wb") as f:
-    pickle.dump(scaler, f)
+    pipeline = build_pipeline(y_train)
+    pipeline.fit(X_train, y_train)
 
-# metadata JSON
-meta = {
-    "model_name":    best_name,
-    "roc_auc":       best_r["roc_auc"],
-    "f1_score":      best_r["f1"],
-    "precision":     best_r["precision"],
-    "recall":        best_r["recall"],
-    "feature_names": feature_names,
-}
-with open("models/model_metadata.json", "w") as f:
-    json.dump(meta, f, indent=2)
+    val_prob = pipeline.predict_proba(X_val)[:, 1]
+    threshold, val_metrics = choose_threshold(y_val, val_prob)
+    print(f"Selected threshold={threshold:.2f} on validation F1={val_metrics['f1_score']:.4f}")
 
-# Print summary
-print("\n-- Saved artefacts --")
-for fn in os.listdir("models"):
-    size = os.path.getsize(f"models/{fn}")
-    print(f"  models/{fn:<30}  {size/1024:.1f} KB")
-print("\nDone! Start the app with:  python app.py")
+    test_prob = pipeline.predict_proba(X_test)[:, 1]
+    test_pred = test_prob >= threshold
+    test_metrics = classification_metrics(y_test, test_prob, test_pred)
+
+    MODEL_DIR.mkdir(exist_ok=True)
+    joblib.dump(pipeline, MODEL_DIR / "pipeline.joblib")
+    joblib.dump(pipeline, MODEL_DIR / "best_model.joblib")
+    joblib.dump(MODEL_INPUT_COLUMNS, MODEL_DIR / "feature_names.joblib")
+    with open(MODEL_DIR / "best_model.pkl", "wb") as fh:
+        pickle.dump(pipeline, fh)
+
+    for legacy_artifact in ("scaler.joblib", "scaler.pkl"):
+        legacy_path = MODEL_DIR / legacy_artifact
+        if legacy_path.exists():
+            legacy_path.unlink()
+
+    metadata = {
+        "model_name": "LightGBM",
+        "artifact": "pipeline.joblib",
+        "training_sample_fraction": SAMPLE_FRAC,
+        "split_strategy": "time_ordered_70_15_15_by_step",
+        "leakage_policy": "serving_safe_no_newbalance_or_balance_error_features",
+        "decision_threshold": threshold,
+        "feature_names": MODEL_INPUT_COLUMNS,
+        "validation": val_metrics,
+        "test": test_metrics,
+        **test_metrics,
+    }
+
+    with open(MODEL_DIR / "model_metadata.json", "w", encoding="utf-8") as fh:
+        json.dump(metadata, fh, indent=2)
+
+    print("\nSaved artifacts:")
+    for path in sorted(MODEL_DIR.iterdir()):
+        print(f"  {path} ({path.stat().st_size / 1024:.1f} KB)")
+    print("\nTest metrics:")
+    print(json.dumps(test_metrics, indent=2))
+
+
+if __name__ == "__main__":
+    main()

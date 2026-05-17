@@ -381,7 +381,7 @@
         }
 
         .badge-table.low { background-color: #f0fdf4; color: #166534; }
-        .badge-table.med { background-color: #fffbeb; color: #92400e; }
+        .badge-table.medium { background-color: #fffbeb; color: #92400e; }
         .badge-table.high { background-color: #fef2f2; color: #991b1b; }
 
         /* --- Model Stats (Hidden/Minimized) --- */
@@ -666,6 +666,7 @@
             // Loading state
             submitBtn.disabled = true;
             btnSpinner.style.display = 'block';
+            resultDisplay.style.opacity = '0.5';
             
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
@@ -688,6 +689,7 @@
             } finally {
                 submitBtn.disabled = false;
                 btnSpinner.style.display = 'none';
+                resultDisplay.style.opacity = '1';
             }
         });
 
@@ -700,7 +702,13 @@
             
             scoreValue.textContent = pct + '%';
             
-            // Gauge animation
+            // Gauge animation reset
+            scoreFill.style.transition = 'none';
+            scoreFill.style.strokeDashoffset = 440;
+            // Force reflow
+            void scoreFill.offsetWidth;
+            
+            scoreFill.style.transition = 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)';
             const offset = 440 - (440 * prob);
             scoreFill.style.strokeDashoffset = offset;
             
@@ -735,7 +743,7 @@
             scanHistory.unshift({
                 time: now,
                 type: input.type,
-                amount: parseFloat(input.amount).toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
+                amount: (parseFloat(input.amount) || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
                 score: Math.round(result.fraud_probability * 100) + '%',
                 risk: result.risk_level
             });

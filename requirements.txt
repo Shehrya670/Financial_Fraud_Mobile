@@ -1,13 +1,16 @@
 # Web server
-flask>=2.3
-gunicorn>=21.0
+flask>=3.0,<3.1
+gunicorn>=22.0,<23.0
+pydantic>=2.8,<2.14
 
 # Data / ML
-joblib>=1.3
-pandas>=2.0
-numpy>=1.24
-scikit-learn>=1.3
+joblib>=1.4,<1.5
+pandas>=2.2,<2.4
+numpy>=1.26,<2.3
+scikit-learn>=1.5,<1.8
 
-# Boosting models (the best model uses one of these)
-xgboost>=2.0
-lightgbm>=4.0
+# Boosting model
+lightgbm>=4.5,<4.7
+
+# Tests
+pytest>=8.3,<10.0

@@ -1,272 +1,187 @@
-# 🛡️ FraudShield — AI Fraud Detection for Mobile Transactions
+# FraudShield - Mobile Transaction Fraud Detection
 
-[![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-2.3+-green?logo=flask)](https://flask.palletsprojects.com/)
-[![XGBoost](https://img.shields.io/badge/XGBoost-ROC--AUC%200.9989-orange)](https://xgboost.readthedocs.io/)
-[![License](https://img.shields.io/badge/License-MIT-purple)](LICENSE)
-[![Deploy](https://img.shields.io/badge/Deploy-Render.com-blue?logo=render)](https://render.com)
+FraudShield is a Flask application that serves a LightGBM fraud-detection model for mobile money transactions. The current serving model is trained on the PaySim dataset with a single scikit-learn pipeline so training and inference share the same preprocessing path.
 
-> An end-to-end **explainable machine learning** pipeline that detects fraudulent mobile financial transactions in real time. Trained on the **PaySim dataset** (6.3 M transactions), deployed as a Flask REST API with an interactive web dashboard.
+## What Changed
 
----
+- Uses one saved `Pipeline` artifact: `models/pipeline.joblib`.
+- Uses a time-ordered train/validation/test split by `step`.
+- Tunes the decision threshold on the validation split instead of using a fixed `0.5`.
+- Reports ROC-AUC, PR-AUC, F1, precision, recall, FPR, FNR, and confusion matrix.
+- Excludes post-transaction leakage fields from serving features.
+- Validates API input with Pydantic and returns proper `400` errors for bad payloads.
+- Adds basic pytest coverage for model health, prediction, validation, and artifacts.
 
-## 📸 Demo
+## Project Structure
 
-| Dashboard | Fraud Detection Result |
-|---|---|
-| Input transaction details via the form | Animated probability gauge + risk badge |
-
----
-
-## 🔍 Research Questions
-
-- Which ML algorithms are most effective for detecting fraudulent mobile transactions?
-- How does class imbalance affect fraud detection performance?
-- Can explainable AI (SHAP) improve transparency and trust in fraud detection systems?
-- Which transaction features contribute most to fraud prediction?
-
----
-
-## 🏗️ Project Structure
-
-```
+```text
 Financial_Fraud_Mobile/
-│
-├── app.py                        # Flask REST API
-├── train_and_save.py             # Standalone training script
-├── Procfile                      # Render/Heroku process file
-├── render.yaml                   # Render.com config
-├── requirements.txt              # Python dependencies
-├── runtime.txt                   # Python 3.11.0
-│
-├── models/                       # Saved model artefacts
-│   ├── best_model.pkl            # Best model (pickle)
-│   ├── best_model.joblib         # Best model (joblib)
-│   ├── scaler.pkl                # StandardScaler
-│   ├── scaler.joblib
-│   ├── feature_names.joblib      # Ordered feature list
-│   └── model_metadata.json       # Name + metrics
-│
-├── templates/
-│   └── index.html                # Interactive web dashboard
-│
-└── Fraud_Detection_Analysis.ipynb  # Full EDA + training notebook
+|-- app.py                         # Flask API and dashboard route
+|-- ml_pipeline.py                 # Shared feature contract and transformer
+|-- train_and_save.py              # Training, evaluation, threshold tuning, artifact saving
+|-- requirements.txt               # Runtime and test dependencies
+|-- runtime.txt                    # Python runtime for deployment
+|-- Procfile                       # Gunicorn start command
+|-- render.yaml                    # Render.com service config
+|-- models/
+|   |-- pipeline.joblib            # Preferred production artifact
+|   |-- best_model.joblib          # Compatibility copy of the same pipeline
+|   |-- best_model.pkl             # Pickle compatibility copy
+|   |-- feature_names.joblib       # Serving feature contract
+|   |-- model_metadata.json        # Metrics, split strategy, threshold, features
+|-- templates/
+|   |-- index.html                 # Web dashboard
+|-- tests/
+|   |-- test_app.py                # API and artifact tests
+|-- Fraud_Detection_Analysis.ipynb # Exploratory notebook
 ```
 
----
+## Current Model
 
-## 🤖 Models Compared
+The saved model is a LightGBM classifier wrapped in a scikit-learn `Pipeline`.
 
-| Model | ROC-AUC | F1 Score | Precision | Recall |
-|---|---|---|---|---|
-| **XGBoost** 🏆 | **0.9989** | 0.3975 | — | — |
-| Random Forest | 0.9982 | 0.1457 | — | — |
-| LightGBM | 0.9947 | 0.1799 | — | — |
-| Gradient Boosting | 0.9917 | 0.1842 | — | — |
-| Decision Tree | 0.9901 | 0.2273 | — | — |
-| Logistic Regression | 0.9871 | 0.0388 | — | — |
+Current test metrics from the regenerated artifacts:
 
-> Best model selected automatically by **ROC-AUC** score. SHAP values explain feature importance for the winning model.
+| Metric | Value |
+|---|---:|
+| ROC-AUC | 0.9986 |
+| PR-AUC | 0.8865 |
+| F1 | 0.7997 |
+| Precision | 0.9528 |
+| Recall | 0.6890 |
+| False positive rate | 0.000142 |
+| False negative rate | 0.3110 |
+| Decision threshold | 0.99 |
 
----
+Test confusion matrix:
 
-## 📊 Dataset
+|  | Predicted legitimate | Predicted fraud |
+|---|---:|---:|
+| Actual legitimate | 190061 | 27 |
+| Actual fraud | 246 | 545 |
 
-**PaySim — Simulated Mobile Money Transactions**  
-Source: [Kaggle — ealaxi/paysim1](https://www.kaggle.com/datasets/ealaxi/paysim1)
+## Serving Features
 
-| Property | Value |
-|---|---|
-| Total transactions | 6,362,620 |
-| Features | 11 |
-| Fraud rate | ~0.13 % |
-| Training sample | 10 % (random, stratified) |
+The production model intentionally avoids post-transaction leakage fields such as `newbalanceOrig`, `newbalanceDest`, `errorBalanceOrg`, and `errorBalanceDest`.
 
-**Features used after preprocessing:**
+Current serving features:
 
 | Feature | Description |
 |---|---|
+| `type` | Transaction type: `PAYMENT`, `TRANSFER`, `CASH_OUT`, `CASH_IN`, or `DEBIT` |
 | `amount` | Transaction amount |
-| `oldbalanceOrg` | Origin account balance before |
-| `newbalanceOrig` | Origin account balance after |
-| `oldbalanceDest` | Destination account balance before |
-| `newbalanceDest` | Destination account balance after |
-| `type_CASH_OUT` | One-hot: CASH_OUT transaction |
-| `type_DEBIT` | One-hot: DEBIT transaction |
-| `type_PAYMENT` | One-hot: PAYMENT transaction |
-| `type_TRANSFER` | One-hot: TRANSFER transaction |
+| `oldbalanceOrg` | Origin account balance before the transaction |
+| `oldbalanceDest` | Destination account balance before the transaction |
+| `isMerchant` | Derived from `destType` in the API or `nameDest` during training |
 
----
+## Training Pipeline
 
-## ⚙️ ML Pipeline
-
-```
-Raw CSV  →  Drop irrelevant cols  →  One-hot encode 'type'
-         →  Train/Test split (80/20, stratified)
-         →  StandardScaler
-         →  SMOTE (oversampling minority fraud class)
-         →  Train 6 models in parallel
-         →  Compare ROC-AUC
-         →  Save best model + scaler
-         →  SHAP explainability on best model
+```text
+Raw PaySim CSV
+-> optional repeatable 20% sample
+-> sort by step
+-> time-ordered 70/15/15 train/validation/test split
+-> no-leakage feature builder
+-> ColumnTransformer:
+   - StandardScaler for numeric features
+   - OneHotEncoder for transaction type
+-> LightGBM with balanced class weights
+-> tune threshold on validation F1
+-> evaluate on held-out future-like test split
+-> save pipeline and metadata
 ```
 
----
+Retrain with:
 
-## 🚀 Quick Start (Local)
-
-### 1. Clone the repo
-```bash
-git clone https://github.com/YOUR_USERNAME/Financial_Fraud_Mobile.git
-cd Financial_Fraud_Mobile
-```
-
-### 2. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. (Optional) Re-train the model
-Download the dataset from Kaggle, place `PS_20174392719_1491204439457_log.csv`
-in the project root, then run:
 ```bash
 python train_and_save.py
 ```
 
-### 4. Start the Flask server
+By default training uses a repeatable 20% sample. To train on a different fraction:
+
 ```bash
-python app.py
+set TRAIN_SAMPLE_FRAC=1.0
+python train_and_save.py
 ```
 
-### 5. Open the dashboard
-```
-http://localhost:5000
-```
-
----
-
-## 🌐 Web Deployment (Render.com — Free)
-
-### One-time setup
-1. Push this repo to GitHub (public)
-2. Go to [render.com](https://render.com) → **New Web Service**
-3. Connect your GitHub repo and fill in:
-
-| Field | Value |
-|---|---|
-| Build Command | `pip install -r requirements.txt` |
-| Start Command | `gunicorn app:app` |
-| Plan | Free |
-
-4. Click **Create Web Service** → wait ~3-5 min → live URL! 🎉
-
-### Auto-deploy on push
-Every `git push` to `main` triggers an automatic redeploy on Render.
-
----
-
-## 🔌 API Reference
+## API
 
 ### `GET /health`
-Returns model status and performance metrics.
 
-```json
-{
-  "status": "healthy",
-  "model": "XGBoost",
-  "roc_auc": 0.9989,
-  "f1": 0.3975,
-  "precision": 0.87,
-  "recall": 0.76,
-  "features": ["amount", "oldbalanceOrg", ...]
-}
-```
-
----
+Returns model status, metrics, selected threshold, confusion matrix, and feature contract.
 
 ### `POST /predict`
-Classify a single transaction.
 
-**Request body:**
+Request:
+
 ```json
 {
   "type": "TRANSFER",
+  "destType": "CUSTOMER",
   "amount": 500000,
   "oldbalanceOrg": 500000,
-  "newbalanceOrig": 0,
-  "oldbalanceDest": 0,
-  "newbalanceDest": 500000
+  "oldbalanceDest": 0
 }
 ```
 
-**Response:**
+Response:
+
 ```json
 {
   "is_fraud": true,
-  "fraud_probability": 0.9234,
+  "fraud_probability": 0.992345,
+  "decision_threshold": 0.99,
   "risk_level": "HIGH",
-  "model": "XGBoost",
-  "timestamp": "2026-05-16T13:45:22"
+  "reasons": [],
+  "model": "LightGBM",
+  "features_used": ["type", "amount", "oldbalanceOrg", "oldbalanceDest", "isMerchant"],
+  "timestamp": "2026-05-17T21:00:00"
 }
 ```
 
-| Field | Type | Description |
-|---|---|---|
-| `is_fraud` | bool | `true` if `fraud_probability ≥ 0.5` |
-| `fraud_probability` | float | Raw probability [0–1] |
-| `risk_level` | string | `LOW` (<0.3) · `MEDIUM` (0.3–0.7) · `HIGH` (≥0.7) |
+Invalid payloads return `400` with field-level details.
 
----
+## Local Setup
 
-## 📦 Dependencies
+```bash
+pip install -r requirements.txt
+python app.py
+```
 
-| Package | Purpose |
-|---|---|
-| `flask` | REST API + template rendering |
-| `gunicorn` | Production WSGI server |
-| `xgboost` | Best-performing classifier |
-| `lightgbm` | Candidate model |
-| `scikit-learn` | Preprocessing, evaluation, other models |
-| `pandas` / `numpy` | Data wrangling |
-| `joblib` | Model serialisation |
+Open:
 
----
+```text
+http://localhost:5000
+```
 
-## 📁 Notebook Overview (`Fraud_Detection_Analysis.ipynb`)
+## Tests
 
-| Section | Content |
-|---|---|
-| §1 | Setup & Dataset Download |
-| §2 | Exploratory Data Analysis (EDA) |
-| §3 | Data Cleaning & Preprocessing |
-| §4 | Class Imbalance (SMOTE) |
-| §5 | Train & Compare 6 Models |
-| §5.1 | Bar charts + heatmap comparison |
-| §5.2 | Best model: report, confusion matrix, ROC curve |
-| §5.3 | **Save model artefacts** |
-| §6 | Explainable AI (SHAP feature importance) |
+```bash
+pytest
+```
 
----
+The tests cover:
 
-## 🧠 Explainable AI
+- `/health` returns model metadata.
+- `/predict` accepts a valid transaction.
+- invalid input is rejected.
+- saved feature order matches metadata.
+- model artifacts load on a fresh app import.
 
-SHAP (SHapley Additive exPlanations) is applied to the best model to:
-- Identify which features most influence fraud predictions
-- Produce both **summary bar** and **beeswarm** plots
-- Increase trust and transparency in the model
+## Deployment
 
----
+Render/Heroku-style start command:
 
-## 📄 License
+```bash
+gunicorn app:app
+```
 
-This project is licensed under the **MIT License** — feel free to use, modify, and distribute.
+The model artifact is committed under `models/`, so deployment does not need the full PaySim CSV.
 
----
+## Dataset
 
-## 👤 Author
+PaySim simulated mobile money transactions:
 
-Built as part of a research project on **Explainable Machine Learning for Financial Fraud Detection**.
+https://www.kaggle.com/datasets/ealaxi/paysim1
 
----
-
-*Made with ❤️ and a lot of XGBoost*
+The raw CSV is intentionally ignored by git because it is large.

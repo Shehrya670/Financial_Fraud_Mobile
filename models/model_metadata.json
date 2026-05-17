@@ -1,21 +1,58 @@
 {
   "model_name": "LightGBM",
-  "roc_auc": 0.9972161557762305,
-  "f1_score": 0.9969040247678018,
-  "precision": 1.0,
-  "recall": 0.9938271604938271,
+  "artifact": "pipeline.joblib",
+  "training_sample_fraction": 0.2,
+  "split_strategy": "time_ordered_70_15_15_by_step",
+  "leakage_policy": "serving_safe_no_newbalance_or_balance_error_features",
+  "decision_threshold": 0.99,
   "feature_names": [
+    "type",
     "amount",
     "oldbalanceOrg",
-    "newbalanceOrig",
     "oldbalanceDest",
-    "newbalanceDest",
-    "isMerchant",
-    "errorBalanceOrg",
-    "errorBalanceDest",
-    "type_CASH_OUT",
-    "type_DEBIT",
-    "type_PAYMENT",
-    "type_TRANSFER"
-  ]
+    "isMerchant"
+  ],
+  "validation": {
+    "roc_auc": 0.9991249918250641,
+    "pr_auc": 0.7243982720908787,
+    "f1_score": 0.7168141592920354,
+    "precision": 0.7788461538461539,
+    "recall": 0.6639344262295082,
+    "false_positive_rate": 0.00012057224636579522,
+    "false_negative_rate": 0.3360655737704918,
+    "confusion_matrix": {
+      "tn": 190734,
+      "fp": 23,
+      "fn": 41,
+      "tp": 81
+    }
+  },
+  "test": {
+    "roc_auc": 0.9986259108895787,
+    "pr_auc": 0.8864887395047157,
+    "f1_score": 0.7997065297138665,
+    "precision": 0.9527972027972028,
+    "recall": 0.6890012642225032,
+    "false_positive_rate": 0.00014203947645301124,
+    "false_negative_rate": 0.3109987357774968,
+    "confusion_matrix": {
+      "tn": 190061,
+      "fp": 27,
+      "fn": 246,
+      "tp": 545
+    }
+  },
+  "roc_auc": 0.9986259108895787,
+  "pr_auc": 0.8864887395047157,
+  "f1_score": 0.7997065297138665,
+  "precision": 0.9527972027972028,
+  "recall": 0.6890012642225032,
+  "false_positive_rate": 0.00014203947645301124,
+  "false_negative_rate": 0.3109987357774968,
+  "confusion_matrix": {
+    "tn": 190061,
+    "fp": 27,
+    "fn": 246,
+    "tp": 545
+  }
 }
